@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
   const [produtos, setProdutos] = useState<any[]>([]);
@@ -19,8 +19,8 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 p-8">
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-yellow-600">RAFFINATO 🍋</h1>
-          <p className="text-gray-600">Controle de Produção e Estoque</p>
+          <h1 className="text-3xl font-bold text-yellow-600">raffinato 🍋</h1>
+          <p className="text-gray-600">Controle de Produção e Estoqueeeee</p>
         </div>
         <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition">
           + Novo Pedido
