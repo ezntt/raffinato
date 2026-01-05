@@ -8,7 +8,7 @@ export default function Home() {
 
   useEffect(() => {
     async function getProdutos() {
-      const { data, error } = await supabase.from('produtos').select('*');
+      const { data, error } = await supabase.from('Produto').select('*');
       if (!error) setProdutos(data);
       setLoading(false);
     }
@@ -20,7 +20,7 @@ export default function Home() {
       <header className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-yellow-600">raffinato 🍋</h1>
-          <p className="text-gray-600">Controle de Produção e Estoqueeeee</p>
+          <p className="text-gray-600">Controle de Produção e Estoque</p>
         </div>
         <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition">
           + Novo Pedido
@@ -34,9 +34,10 @@ export default function Home() {
           {loading ? <p>Carregando...</p> : (
             <div className="mt-4 space-y-2">
               {produtos.map(p => (
-                <div key={p.id} className="flex justify-between border-b pb-1">
+                <div key={p.id} className="text-black flex justify-between">
                   <span>{p.nome}</span>
-                  <span className="font-bold">{p.quantidade_estoque} un</span>
+                  <span className="font-bold">{p.qtd_estoque} un</span>
+                  <span>R${p.preco}</span>
                 </div>
               ))}
             </div>
