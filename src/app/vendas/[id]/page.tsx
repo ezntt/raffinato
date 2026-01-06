@@ -14,7 +14,6 @@ export default async function DetalhesVendaPage(props: Props) {
   
   const supabase = await createClient()
 
-  // QUERY CORRIGIDA: Usando 'Cliente' (Maiúsculo)
   const { data: venda } = await supabase
     .from('vendas')
     .select(`
@@ -55,7 +54,6 @@ export default async function DetalhesVendaPage(props: Props) {
 
           <div className="text-left md:text-right bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <span className="text-xs font-bold text-gray-400 uppercase block mb-1">Cliente</span>
-            {/* AQUI ESTÁ A CORREÇÃO: venda.Cliente?.nome */}
             <h2 className="text-lg font-black text-gray-900">{venda.Cliente?.nome || 'Não informado'}</h2>
             <p className="text-gray-500 text-sm font-medium">{venda.Cliente?.telefone || '-'}</p>
             <span className="text-[10px] font-bold uppercase text-gray-400 bg-gray-100 px-2 py-1 rounded mt-2 inline-block">
@@ -75,13 +73,25 @@ export default async function DetalhesVendaPage(props: Props) {
                     {item.produto === 'limoncello' ? '🍋' : '🍊'}
                   </div>
                   <div>
-                    <p className="font-black text-gray-900 capitalize text-lg flex items-center gap-2">
-                      {item.produto} 
-                      <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide">{item.tamanho}ml</span>
-                    </p>
-                    <p className="text-xs text-gray-400 font-bold uppercase mt-1">
-                      Preço Unitário: <span className="text-gray-600">R$ {item.preco_unitario.toFixed(2)}</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                        <p className="font-black text-gray-900 capitalize text-lg">
+                        {item.produto} 
+                        </p>
+                        <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold">{item.tamanho}ml</span>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-1">
+                        {/* AQUI MOSTRAMOS O LOTE */}
+                        {item.lote_id ? (
+                             <span className="text-[10px] font-bold uppercase bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">
+                                Lote: {item.lote_id}
+                             </span>
+                        ) : (
+                             <span className="text-[10px] font-bold uppercase bg-gray-50 text-gray-400 px-2 py-0.5 rounded">
+                                Estoque Antigo
+                             </span>
+                        )}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
