@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabaseServer' // Usando sua config de server-side
 import { redirect } from 'next/navigation'
+import { BotaoFinalizar } from '@/components/botaoFinalizar'
 
 // Função para calcular dias restantes
 function getDiasRestantes(dataPrevisao: string) {
@@ -106,17 +107,15 @@ export default async function LotesPage() {
               </div>
 
               {/* Botão de Ação (Só aparece se estiver pronto) */}
-              {isPronto && (
-                 <button 
-                   className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-xl shadow-lg shadow-green-100 transition-all flex justify-center items-center gap-2"
-                   // Aqui futuramente colocaremos a função de finalizar
-                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                     <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                   </svg>
-                   Finalizar Lote
-                 </button>
-              )}
+              {/* Botão de Ação Funcional */}
+                {isPronto && (
+                <BotaoFinalizar 
+                    loteId={lote.id}
+                    tipo={lote.produto}
+                    qtd750={lote.qtd_garrafas_750}
+                    qtd375={lote.qtd_garrafas_375}
+                />
+                )}
             </div>
           )
         })}

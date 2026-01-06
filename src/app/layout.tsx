@@ -23,8 +23,12 @@ export default function RootLayout({
           {/* A Sidebar fica fixa na esquerda */}
           <Sidebar />
 
-          {/* O conteúdo principal (suas páginas) fica na direita com uma margem de 16rem (256px) que é a largura da sidebar */}
-          <main className="flex-1 ml-64 p-8">
+          {/* 1. ml-0: Margem zero no celular (conteúdo ocupa a tela toda)
+            2. md:ml-64: Margem de 256px só no PC (para a sidebar) 
+            3. Removi o 'p-8' daqui para não somar com o padding das páginas
+          */}
+          
+          <main className="flex-1 ml-0 md:ml-64 transition-all duration-300 bg-gray-50 min-h-screen">
             {children}
           </main>
           

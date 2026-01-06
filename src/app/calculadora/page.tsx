@@ -73,7 +73,7 @@ export default function CalculadoraRaffinato() {
     while (!idDisponivel) {
       // Verifica se este ID já existe no banco
       const { data } = await supabase
-        .from('lotes')
+        .from('Lote')
         .select('id')
         .eq('id', idFinal)
         .single()
@@ -93,7 +93,7 @@ export default function CalculadoraRaffinato() {
     previsao.setDate(previsao.getDate() + 10)
 
     // 4. Enviar para o Supabase com o ID GARANTIDO
-    const { error } = await supabase.from('lotes').insert({
+    const { error } = await supabase.from('Lote').insert({
       id: idFinal, // Usa o ID calculado (ex: 050126 ou 050126-2)
       produto: tipo,
       qtd_garrafas_750: qtdGarrafas750,
