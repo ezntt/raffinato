@@ -109,8 +109,7 @@ export default function CalculadoraRaffinato() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <header className="mb-8">
-        <h1 className="text-3xl font-black text-yellow-600 tracking-tight">RAFFINATO 🍋</h1>
-        <p className="text-gray-500 font-medium">Calculadora de Produção (Granel)</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Calculadora</h1>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8">

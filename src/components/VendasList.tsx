@@ -45,8 +45,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
       {/* === CABEÇALHO COM TOTAIS DINÂMICOS === */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Histórico de Vendas 📜</h1>
-          <p className="text-gray-500 font-medium">Controle de caixa e recebimentos.</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Histórico de Vendas</h1>
         </div>
         
         <div className="flex gap-4 w-full md:w-auto">

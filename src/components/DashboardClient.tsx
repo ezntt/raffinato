@@ -34,8 +34,7 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
       
       <header className="mb-10 flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Dashboard & Estoque 📦</h1>
-          <p className="text-gray-500 font-medium">Visão geral da produção e produtos acabados.</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Painel Central & Estoque</h1>
         </div>
         <div className="flex gap-3">
            {/* BOTÃO NOVA VENDA VOLTOU AQUI */}
