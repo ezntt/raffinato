@@ -22,25 +22,12 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
   // === MÁSCARA DE TELEFONE ===
   const formatarTelefone = (valor: string) => {
-    // Remove tudo que não é dígito
     let v = valor.replace(/\D/g, "")
-    // Limita a 11 dígitos (DDD + 9 números)
     v = v.substring(0, 11)
-    
-    // Aplica a formatação (XX) XXXXX-XXXX
-    if (v.length > 10) { 
-        // Formato (XX) XXXXX-XXXX
-        v = v.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
-    } else if (v.length > 5) {
-        // Formato (XX) XXXX...
-        v = v.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
-    } else if (v.length > 2) {
-        // Formato (XX) ...
-        v = v.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
-    } else {
-        // Formato (XX
-        if (v !== "") v = v.replace(/^(\d*)/, "($1")
-    }
+    if (v.length > 10) v = v.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
+    else if (v.length > 5) v = v.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
+    else if (v.length > 2) v = v.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
+    else if (v !== "") v = v.replace(/^(\d*)/, "($1")
     return v
   }
 
@@ -58,7 +45,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
         if (error) throw error
 
-        // Atualiza a lista local e limpa
         setClientes([...clientes, novo].sort((a,b) => a.nome.localeCompare(b.nome)))
         setIsModalOpen(false)
         setNovoNome('')
@@ -86,14 +72,12 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   }
 
   const saveEdit = async (id: string) => {
-    // Atualização otimista
     const updatedList = clientes.map(c => 
         c.id === id ? { ...c, nome: editNome, telefone: editFone, tipo: editTipo } : c
     )
     setClientes(updatedList)
     setEditingId(null)
 
-    // Salva no banco
     const { error } = await supabase
         .from('Cliente')
         .update({ nome: editNome, telefone: editFone, tipo: editTipo })
@@ -116,90 +100,93 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Nome</th>
-              <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Contato</th>
-              <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Tipo</th>
-              <th className="p-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {clientes.map((cliente) => (
-              <tr key={cliente.id} className="hover:bg-gray-50 transition-colors group">
-                
-                {/* NOME */}
-                <td className="p-4">
-                  {editingId === cliente.id ? (
-                      <input 
-                          value={editNome} 
-                          onChange={e => setEditNome(e.target.value)} 
-                          className="w-full p-2 border border-blue-300 rounded-lg outline-none text-gray-900 font-bold"
-                      />
-                  ) : (
-                      <span className="font-bold text-gray-900">{cliente.nome}</span>
-                  )}
-                </td>
+        {/* WRAPPER PARA SCROLL HORIZONTAL MOBILE */}
+        <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[600px]">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="p-3 md:p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Nome</th>
+                  <th className="p-3 md:p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Contato</th>
+                  <th className="p-3 md:p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Tipo</th>
+                  <th className="p-3 md:p-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {clientes.map((cliente) => (
+                  <tr key={cliente.id} className="hover:bg-gray-50 transition-colors group">
+                    
+                    {/* NOME */}
+                    <td className="p-3 md:p-4">
+                      {editingId === cliente.id ? (
+                          <input 
+                              value={editNome} 
+                              onChange={e => setEditNome(e.target.value)} 
+                              className="w-full min-w-[150px] p-2 border border-blue-300 rounded-lg outline-none text-gray-900 font-bold"
+                          />
+                      ) : (
+                          <span className="font-bold text-gray-900 whitespace-nowrap">{cliente.nome}</span>
+                      )}
+                    </td>
 
-                {/* TELEFONE (Com máscara na edição) */}
-                <td className="p-4">
-                  {editingId === cliente.id ? (
-                      <input 
-                          value={editFone} 
-                          onChange={e => setEditFone(formatarTelefone(e.target.value))} 
-                          className="w-full p-2 border border-blue-300 rounded-lg outline-none text-gray-900"
-                          placeholder="(XX) XXXXX-XXXX"
-                      />
-                  ) : (
-                      <span className="text-gray-500 font-mono text-sm">{cliente.telefone}</span>
-                  )}
-                </td>
+                    {/* TELEFONE */}
+                    <td className="p-3 md:p-4">
+                      {editingId === cliente.id ? (
+                          <input 
+                              value={editFone} 
+                              onChange={e => setEditFone(formatarTelefone(e.target.value))} 
+                              className="w-full min-w-[150px] p-2 border border-blue-300 rounded-lg outline-none text-gray-900"
+                              placeholder="(XX) XXXXX-XXXX"
+                          />
+                      ) : (
+                          <span className="text-gray-500 font-mono text-sm whitespace-nowrap">{cliente.telefone}</span>
+                      )}
+                    </td>
 
-                {/* TIPO */}
-                <td className="p-4">
-                  {editingId === cliente.id ? (
-                      <select 
-                          value={editTipo} 
-                          onChange={e => setEditTipo(e.target.value)} 
-                          className="p-2 border border-blue-300 rounded-lg outline-none text-gray-900 text-sm"
-                      >
-                          <option value="consumidor">Pessoa</option>
-                          <option value="emporio">Empório</option>
-                          <option value="restaurante">Restaurante</option>
-                      </select>
-                  ) : (
-                      <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${
-                        cliente.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' :
-                        cliente.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-500'
-                      }`}>
-                          {cliente.tipo}
-                      </span>
-                  )}
-                </td>
+                    {/* TIPO */}
+                    <td className="p-3 md:p-4">
+                      {editingId === cliente.id ? (
+                          <select 
+                              value={editTipo} 
+                              onChange={e => setEditTipo(e.target.value)} 
+                              className="p-2 border border-blue-300 rounded-lg outline-none text-gray-900 text-sm"
+                          >
+                              <option value="consumidor">Pessoa</option>
+                              <option value="emporio">Empório</option>
+                              <option value="restaurante">Restaurante</option>
+                          </select>
+                      ) : (
+                          <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${
+                            cliente.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' :
+                            cliente.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-500'
+                          }`}>
+                              {cliente.tipo}
+                          </span>
+                      )}
+                    </td>
 
-                {/* AÇÕES */}
-                <td className="p-4 text-right">
-                  {editingId === cliente.id ? (
-                      <div className="flex justify-end gap-2">
-                          <button onClick={cancelEdit} className="text-gray-400 cursor-pointer hover:text-gray-600 font-bold text-sm">Cancelar</button>
-                          <button onClick={() => saveEdit(cliente.id)} className="bg-green-600 cursor-pointer hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-sm">Salvar</button>
-                      </div>
-                  ) : (
-                      <button 
-                          onClick={() => startEdit(cliente)} 
-                          className="text-gray-300 cursor-pointer hover:text-blue-600 font-bold text-sm transition-colors"
-                      >
-                          Editar ✏️
-                      </button>
-                  )}
-                </td>
+                    {/* AÇÕES */}
+                    <td className="p-3 md:p-4 text-right whitespace-nowrap">
+                      {editingId === cliente.id ? (
+                          <div className="flex justify-end gap-2">
+                              <button onClick={cancelEdit} className="text-gray-400 cursor-pointer hover:text-gray-600 font-bold text-sm">✕</button>
+                              <button onClick={() => saveEdit(cliente.id)} className="bg-green-600 cursor-pointer hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-sm">Salvar</button>
+                          </div>
+                      ) : (
+                          <button 
+                              onClick={() => startEdit(cliente)} 
+                              className="text-gray-300 cursor-pointer hover:text-blue-600 font-bold text-sm transition-colors"
+                          >
+                              Editar ✏️
+                          </button>
+                      )}
+                    </td>
 
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        </div>
         {clientes.length === 0 && <div className="p-8 text-center text-gray-400">Nenhum cliente cadastrado.</div>}
       </div>
 

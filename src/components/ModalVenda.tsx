@@ -192,6 +192,8 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
         <form onSubmit={handleVenda} className="flex-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* ESQUERDA */}
                 <div className="space-y-6">
                     <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Dados do Cliente</span>
@@ -218,7 +220,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                 required 
                                 placeholder="WhatsApp" 
                                 value={telefone} 
-                                // AQUI ESTÁ A MÁSCARA SENDO APLICADA
                                 onChange={e => setTelefone(formatarTelefone(e.target.value))} 
                                 className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" 
                             />
@@ -236,9 +237,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                     </div>
                 </div>
 
-                {/* DIREITA - MANTIDA IGUAL */}
+                {/* DIREITA */}
                 <div className="space-y-6 flex flex-col h-full">
                     <div className="space-y-3">
+                        {/* LIMONCELLO */}
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-yellow-400 transition-colors shadow-sm">
                             <div className="w-24 text-right pt-2"><span className="block font-black text-gray-900 uppercase text-sm">Limoncello</span></div>
                             <div className="flex-1 flex gap-2">
@@ -246,6 +248,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                 <div className="relative flex-1"><input type="number" placeholder="0" value={qtdL375} onChange={e => handleNumChange(e.target.value, setQtdL375)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-gray-900 text-center outline-none focus:bg-yellow-50 focus:text-yellow-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">375ml</span><SelectLote prod="limoncello" tam={375} val={loteL375} setVal={setLoteL375} /></div>
                             </div>
                         </div>
+                        {/* ARANCELLO */}
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-orange-400 transition-colors shadow-sm">
                             <div className="w-24 text-right pt-2"><span className="block font-black text-gray-900 uppercase text-sm">Arancello</span></div>
                             <div className="flex-1 flex gap-2">
@@ -262,9 +265,28 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                             <div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status Pagamento</span><span className={`text-sm font-black ${pago ? 'text-green-600' : 'text-red-500'}`}>{pago ? 'PAGO' : 'PENDENTE'}</span></div>
                             <button type="button" onClick={() => setPago(!pago)} className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${pago ? 'bg-green-500' : 'bg-gray-300'}`}><span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${pago ? 'translate-x-7' : 'translate-x-1'}`} /></button>
                          </div>
-                         <div className="flex gap-4">
-                            <div className="relative flex-1"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600 font-bold">R$</span><input type="number" step="0.01" required value={valorTotal} onChange={e => handleNumChange(e.target.value, setValorTotal)} className="w-full pl-10 p-4 bg-green-100 border-2 border-green-200 focus:border-green-500 rounded-xl outline-none font-black text-2xl text-green-900" placeholder="0.00" /></div>
-                            <button type="submit" disabled={loading} className="flex-[2] bg-black hover:bg-gray-800 text-white font-bold rounded-xl text-lg transition shadow-lg disabled:opacity-50">{loading ? '...' : 'Confirmar Venda'}</button>
+                         
+                         {/* PREÇO E BOTÃO LADO A LADO NO DESKTOP, COLUNA NO MOBILE */}
+                         <div className="flex flex-col md:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600 font-bold">R$</span>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    required 
+                                    value={valorTotal} 
+                                    onChange={e => handleNumChange(e.target.value, setValorTotal)} 
+                                    className="w-full pl-12 p-4 bg-white border-2 border-green-200 focus:border-green-500 rounded-xl outline-none font-black text-3xl text-green-900" 
+                                    placeholder="0.00" 
+                                />
+                            </div>
+                            <button 
+                                type="submit" 
+                                disabled={loading} 
+                                className="w-full cursor-pointer md:flex-1 bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg disabled:opacity-50"
+                            >
+                                {loading ? '...' : 'Confirmar Venda'}
+                            </button>
                          </div>
                     </div>
                 </div>
