@@ -16,7 +16,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [tipoCliente, setTipoCliente] = useState('consumidor')
-  const [cpfCnpj, setCpfCnpj] = useState('') // NOVO CAMPO
+  const [cpfCnpj, setCpfCnpj] = useState('')
   const [clienteIdSelecionado, setClienteIdSelecionado] = useState<string | null>(null)
   
   // Autocomplete
@@ -44,11 +44,11 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
   // === MÁSCARAS ===
   const formatarTelefone = (v: string) => {
-    v = v.replace(/\D/g, "").substring(0, 11)
-    if (v.length > 10) return v.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
-    if (v.length > 5) return v.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
-    if (v.length > 2) return v.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
-    return v ? v.replace(/^(\d*)/, "($1") : ""
+    let val = v.replace(/\D/g, "").substring(0, 11)
+    if (val.length > 10) return val.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
+    if (val.length > 5) return val.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
+    if (val.length > 2) return val.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
+    return val ? val.replace(/^(\d*)/, "($1") : ""
   }
 
   const maskCpfCnpj = (v: string) => {
@@ -88,12 +88,11 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     setNome(cliente.nome)
     setTelefone(cliente.telefone || '')
     setTipoCliente(cliente.tipo || 'consumidor')
-    setCpfCnpj(cliente.cpf_cnpj || '') // PREENCHE CPF SE EXISTIR
+    setCpfCnpj(cliente.cpf_cnpj || '')
     setClienteIdSelecionado(cliente.id)
     setMostrarSugestoes(false)
   }
 
-  // Helpers
   const getOpcoesLote = (prod: string, tam: number) => {
     return lotesDisponiveis.filter(l => l.produto === prod && (tam === 750 ? l.estoque_750 > 0 : l.estoque_375 > 0))
   }
@@ -132,13 +131,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
     try {
       let finalClienteId = clienteIdSelecionado
-      // Cria ou Atualiza cliente básico se não existir
       if (!finalClienteId) {
-        // Busca por telefone pra não duplicar
         const { data: existente } = await supabase.from('Cliente').select('id').eq('telefone', telefone).single()
         if (existente) {
             finalClienteId = existente.id
-            // Opcional: Atualizar CPF do cliente existente se informado
             if(cpfCnpj) await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj }).eq('id', finalClienteId)
         } else {
             const { data: novo } = await supabase.from('Cliente').insert({ nome, telefone, tipo: tipoCliente, cpf_cnpj: cpfCnpj }).select().single()
@@ -183,7 +179,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const SelectLote = ({ prod, tam, val, setVal }: any) => {
     const ops = getOpcoesLote(prod, tam)
     return (
-      <select value={val} onChange={e => setVal(e.target.value)} className="text-[10px] bg-white border border-gray-200 rounded p-1 w-full mt-1 outline-none focus:border-black text-gray-900">
+      <select value={val} onChange={e => setVal(e.target.value)} className="text-[10px] bg-white border border-gray-200 rounded p-1 w-full mt-1 outline-none focus:border-black text-gray-900 cursor-pointer">
         <option value="">-- Estoque Antigo / Misto --</option>
         {ops.map(l => <option key={l.id} value={l.id}>Lote {l.id} (Disp: {tam === 750 ? l.estoque_750 : l.estoque_375})</option>)}
       </select>
@@ -195,7 +191,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       <div className="bg-white rounded-3xl p-8 w-full max-w-5xl shadow-2xl relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
         <div className="flex justify-between items-start mb-6">
             <div><h2 className="text-3xl font-black text-gray-900 mb-1">Nova Venda 💰</h2></div>
-            <button onClick={onClose} className="text-gray-400 hover:text-black font-bold p-2 text-xl">✕</button>
+            <button onClick={onClose} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
         </div>
 
         <form onSubmit={handleVenda} className="flex-1 overflow-y-auto pr-2">
@@ -228,14 +224,13 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
                         <div className="flex gap-3">
                             <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatarTelefone(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
-                            <select value={tipoCliente} onChange={e => setTipoCliente(e.target.value)} className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold">
+                            <select value={tipoCliente} onChange={e => setTipoCliente(e.target.value)} className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold cursor-pointer">
                                 <option value="consumidor">Pessoa</option>
                                 <option value="emporio">Empório</option>
                                 <option value="restaurante">Restaurante</option>
                             </select>
                         </div>
                         
-                        {/* NOVO CAMPO CPF/CNPJ NA VENDA */}
                         <div>
                             <input 
                                 placeholder="CPF / CNPJ (Opcional para Nota)" 
@@ -244,7 +239,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                 className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-mono placeholder-gray-400" 
                             />
                         </div>
-
                     </div>
 
                     <div className="flex gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
@@ -253,10 +247,9 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                     </div>
                 </div>
 
-                {/* DIREITA - MANTIDA IGUAL */}
+                {/* DIREITA */}
                 <div className="space-y-6 flex flex-col h-full">
                     <div className="space-y-3">
-                        {/* LIMONCELLO */}
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-yellow-400 transition-colors shadow-sm">
                             <div className="w-24 text-right pt-2"><span className="block font-black text-gray-900 uppercase text-sm">Limoncello</span></div>
                             <div className="flex-1 flex gap-2">
@@ -264,7 +257,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                 <div className="relative flex-1"><input type="number" placeholder="0" value={qtdL375} onChange={e => handleNumChange(e.target.value, setQtdL375)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-gray-900 text-center outline-none focus:bg-yellow-50 focus:text-yellow-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">375ml</span><SelectLote prod="limoncello" tam={375} val={loteL375} setVal={setLoteL375} /></div>
                             </div>
                         </div>
-                        {/* ARANCELLO */}
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-orange-400 transition-colors shadow-sm">
                             <div className="w-24 text-right pt-2"><span className="block font-black text-gray-900 uppercase text-sm">Arancello</span></div>
                             <div className="flex-1 flex gap-2">
@@ -279,7 +271,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                     <div className="mt-auto bg-gray-50 p-4 rounded-2xl border border-gray-100">
                          <div className="flex justify-between items-center mb-4">
                             <div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status Pagamento</span><span className={`text-sm font-black ${pago ? 'text-green-600' : 'text-red-500'}`}>{pago ? 'PAGO' : 'PENDENTE'}</span></div>
-                            <button type="button" onClick={() => setPago(!pago)} className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${pago ? 'bg-green-500' : 'bg-gray-300'}`}><span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${pago ? 'translate-x-7' : 'translate-x-1'}`} /></button>
+                            <button type="button" onClick={() => setPago(!pago)} className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${pago ? 'bg-green-500' : 'bg-gray-300'}`}><span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${pago ? 'translate-x-7' : 'translate-x-1'}`} /></button>
                          </div>
                          
                          <div className="flex flex-col md:flex-row gap-4">
@@ -287,7 +279,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600 font-bold">R$</span>
                                 <input type="number" step="0.01" required value={valorTotal} onChange={e => handleNumChange(e.target.value, setValorTotal)} className="w-full pl-12 p-4 bg-white border-2 border-green-200 focus:border-green-500 rounded-xl outline-none font-black text-3xl text-green-900" placeholder="0.00" />
                             </div>
-                            <button type="submit" disabled={loading} className="w-full md:flex-1 bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg disabled:opacity-50">
+                            <button type="submit" disabled={loading} className="w-full md:flex-1 bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg disabled:opacity-50 cursor-pointer">
                                 {loading ? '...' : 'Confirmar Venda'}
                             </button>
                          </div>

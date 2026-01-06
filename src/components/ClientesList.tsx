@@ -131,15 +131,16 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
       <div className="flex justify-end mb-4">
         <button 
             onClick={abrirNovo}
-            className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2"
+            className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center"
         >
             <span>+ Novo Cliente</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* === VERSÃO DESKTOP (TABELA) - Escondida no Mobile (hidden md:block) === */}
+      <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[800px]">
+            <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Cliente</th>
@@ -181,19 +182,68 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
               </tbody>
             </table>
         </div>
-        {clientes.length === 0 && <div className="p-8 text-center text-gray-400">Nenhum cliente cadastrado.</div>}
       </div>
+
+      {/* === VERSÃO MOBILE (CARDS) - Escondida no Desktop (md:hidden) === */}
+      <div className="md:hidden space-y-4">
+        {clientes.map((cliente) => (
+            <div key={cliente.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="font-bold text-gray-900 text-lg">{cliente.nome}</h3>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block ${
+                            cliente.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' :
+                            cliente.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-500'
+                        }`}>{cliente.tipo}</span>
+                    </div>
+                    <button 
+                        onClick={() => abrirEditar(cliente)} 
+                        className="bg-gray-100 text-gray-600 p-2 rounded-lg text-sm font-bold"
+                    >
+                        ✏️
+                    </button>
+                </div>
+                
+                <div className="space-y-1 border-t border-gray-100 pt-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span>📞</span> <span className="font-mono">{cliente.telefone || 'Sem telefone'}</span>
+                    </div>
+                    {cliente.email && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600 truncate">
+                            <span>📧</span> <span className="truncate">{cliente.email}</span>
+                        </div>
+                    )}
+                    {cliente.endereco && (
+                        <div className="flex items-start gap-2 text-sm text-gray-600">
+                            <span>📍</span> 
+                            <span>
+                                {cliente.endereco}, {cliente.numero} <br/>
+                                <span className="text-xs text-gray-400">{cliente.bairro}</span>
+                            </span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        ))}
+      </div>
+
+      {clientes.length === 0 && <div className="p-8 text-center text-gray-400">Nenhum cliente cadastrado.</div>}
 
       {/* === MODAL UNIFICADO (CRIAR/EDITAR) === */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-hidden">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-black text-gray-900">{modoEdicao ? 'Editar Cliente' : 'Novo Cliente'} 👤</h2>
-                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl">✕</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            {/* Ajustado max-h e overflow para mobile */}
+            <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh] md:max-h-auto">
+                
+                {/* Cabeçalho Fixo do Modal */}
+                <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100">
+                    <h2 className="text-xl md:text-2xl font-black text-gray-900">{modoEdicao ? 'Editar Cliente' : 'Novo Cliente'} 👤</h2>
+                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
                 </div>
                 
-                <form onSubmit={handleSalvar} className="flex-1 overflow-y-auto pr-2 space-y-6">
+                {/* Corpo do Modal com Scroll */}
+                <form onSubmit={handleSalvar} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
                     
                     {/* SEÇÃO 1: DADOS BÁSICOS */}
                     <div className="space-y-4">
@@ -209,7 +259,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase">Tipo *</label>
-                                <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900">
+                                <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 cursor-pointer">
                                     <option value="consumidor">Pessoa Física</option>
                                     <option value="emporio">Empório / Revenda</option>
                                     <option value="restaurante">Restaurante</option>
@@ -235,7 +285,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
                     {/* SEÇÃO 3: ENDEREÇO */}
                     <div className="space-y-4">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Endereço (Obrigatório p/ NFe)</h3>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Endereço</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase">CEP</label>
@@ -268,13 +318,15 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                         </div>
                     </div>
 
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 mt-4"
-                    >
-                        {loading ? 'Salvando...' : (modoEdicao ? 'Atualizar Cliente' : 'Cadastrar Cliente')}
-                    </button>
+                    <div className="pt-2">
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                            {loading ? 'Salvando...' : (modoEdicao ? 'Atualizar Cliente' : 'Cadastrar Cliente')}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

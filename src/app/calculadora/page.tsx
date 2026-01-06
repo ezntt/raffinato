@@ -48,7 +48,6 @@ export default function CalculadoraRaffinato() {
       return
     }
 
-    // Confirm simples que funciona melhor em mobile
     if (!window.confirm(`Iniciar lote de ${volumeTotalLitros}L de ${tipo}?`)) return
 
     setLoading(true)
