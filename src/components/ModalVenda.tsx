@@ -12,10 +12,11 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  // === DADOS DO CLIENTE ===
+  // === DADOS DA VENDA ===
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [tipoCliente, setTipoCliente] = useState('consumidor') // Novo campo
+  const [tipoCliente, setTipoCliente] = useState('consumidor')
+  const [pago, setPago] = useState(false) // NOVO: Status do pagamento
   
   // === CONFIGURAÇÃO DE PREÇOS ===
   const [precoUnit750, setPrecoUnit750] = useState<number | string>(180)
@@ -55,26 +56,22 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
   // === VERIFICAÇÃO DE ESTOQUE ===
   const verificarEstoque = async () => {
-    // 1. Busca o estoque atual no banco
-    const { data: estoque, error } = await supabase.from('Estoque').select('*')
+    const { data: estoque, error } = await supabase.from('Estoque').select('*') // Lembre de conferir se é 'Estoque' ou 'estoque' no seu banco
     if (error) throw new Error("Erro ao consultar estoque.")
 
     const getDisponivel = (tipo: string, tam: number) => {
-      const item = estoque?.find(e => e.tipo === tipo && e.tamanho === tam)
+      // Ajuste aqui se sua tabela usa maiusculas nos dados (ex: 'Limoncello' vs 'limoncello')
+      const item = estoque?.find(e => e.tipo?.toLowerCase() === tipo && e.tamanho === tam)
       return item?.quantidade || 0
     }
 
-    // 2. Compara com o que estamos tentando vender
     const erros = []
-    
     if ((Number(qtdL750)||0) > getDisponivel('limoncello', 750)) erros.push(`Limoncello 750ml (Disp: ${getDisponivel('limoncello', 750)})`)
     if ((Number(qtdL375)||0) > getDisponivel('limoncello', 375)) erros.push(`Limoncello 375ml (Disp: ${getDisponivel('limoncello', 375)})`)
     if ((Number(qtdA750)||0) > getDisponivel('arancello', 750)) erros.push(`Arancello 750ml (Disp: ${getDisponivel('arancello', 750)})`)
     if ((Number(qtdA375)||0) > getDisponivel('arancello', 375)) erros.push(`Arancello 375ml (Disp: ${getDisponivel('arancello', 375)})`)
 
-    if (erros.length > 0) {
-      throw new Error(`Estoque insuficiente para:\n- ${erros.join('\n- ')}`)
-    }
+    if (erros.length > 0) throw new Error(`Estoque insuficiente:\n- ${erros.join('\n- ')}`)
   }
 
   // === FINALIZAR VENDA ===
@@ -95,18 +92,15 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     setLoading(true)
 
     try {
-      // 1. VERIFICAR ESTOQUE ANTES DE TUDO
       await verificarEstoque()
 
-      // 2. Cliente (Busca ou Cria com Tipo)
+      // Cliente
       let clienteId = null
       const { data: clienteExistente } = await supabase
-        .from('Cliente').select('id').eq('telefone', telefone).single()
+        .from('Cliente').select('id').eq('telefone', telefone).single() // Verifique se tabela é 'clientes' ou 'Cliente'
 
       if (clienteExistente) {
         clienteId = clienteExistente.id
-        // Opcional: Atualizar o tipo do cliente existente se mudou
-        await supabase.from('clientes').update({ tipo: tipoCliente }).eq('id', clienteId)
       } else {
         const { data: novoCliente, error: erroCli } = await supabase
           .from('Cliente').insert({ nome, telefone, tipo: tipoCliente }).select().single()
@@ -114,14 +108,19 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         clienteId = novoCliente.id
       }
 
-      // 3. Criar Venda
+      // Venda (COM CAMPO PAGO)
       const { data: venda, error: erroVenda } = await supabase
         .from('vendas')
-        .insert({ cliente_id: clienteId, valor_total: nTotal, observacao }).select().single()
+        .insert({ 
+            cliente_id: clienteId, 
+            valor_total: nTotal, 
+            observacao,
+            pago: pago // Salva o status
+        }).select().single()
 
       if (erroVenda) throw erroVenda
 
-      // 4. Inserir Itens
+      // Itens
       const processarItem = async (prod: string, tam: number, qtd: number, preco: number) => {
         if (qtd > 0) {
           await supabase.from('itens_venda').insert({
@@ -141,7 +140,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       onClose()
       
       // Limpar
-      setNome(''); setTelefone(''); setObservacao('')
+      setNome(''); setTelefone(''); setObservacao(''); setPago(false)
       setQtdL750(''); setQtdL375(''); setQtdA750(''); setQtdA375('')
 
     } catch (error: any) {
@@ -159,21 +158,17 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold p-2">✕</button>
 
         <h2 className="text-2xl font-black text-gray-900 mb-1">Nova Venda 💰</h2>
-        <p className="text-sm text-gray-500 mb-6">Controle de saída e verificação de estoque.</p>
+        <p className="text-sm text-gray-500 mb-6">Controle de saída e pagamentos.</p>
 
         <form onSubmit={handleVenda} className="space-y-6">
           
-          {/* === DADOS DO CLIENTE === */}
+          {/* CLIENTE */}
           <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-3">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Cliente</span>
             <input required placeholder="Nome do Cliente" value={nome} onChange={e => setNome(e.target.value)} className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
             <div className="flex gap-3">
               <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(e.target.value)} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
-              <select 
-                value={tipoCliente} 
-                onChange={e => setTipoCliente(e.target.value)}
-                className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold"
-              >
+              <select value={tipoCliente} onChange={e => setTipoCliente(e.target.value)} className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold">
                 <option value="consumidor">Pessoa</option>
                 <option value="emporio">Empório</option>
                 <option value="restaurante">Restaurante</option>
@@ -181,7 +176,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          {/* === PREÇOS === */}
+          {/* PREÇOS */}
           <div className="flex gap-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
              <div className="flex-1">
                <label className="text-[10px] font-bold text-blue-400 uppercase block mb-1">Preço 750ml</label>
@@ -193,33 +188,58 @@ export function ModalVenda({ isOpen, onClose }: Props) {
              </div>
           </div>
 
-          {/* === PRODUTOS === */}
+          {/* PRODUTOS (SEM ÍCONES, COM TEXTO CLARO) */}
           <div className="space-y-4">
-            <div className="flex gap-4 items-center">
-              <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-lg">🍋</div>
+            <div className="flex gap-4 items-center border border-gray-100 p-3 rounded-xl hover:border-yellow-400 transition-colors">
+              <div className="w-24 text-right">
+                <span className="block font-black text-gray-900 uppercase text-sm">Limoncello</span>
+                <span className="text-[10px] text-gray-400 font-bold tracking-wide">CLÁSSICO</span>
+              </div>
               <div className="flex-1 grid grid-cols-2 gap-3">
-                <input type="number" placeholder="750ml" value={qtdL750} onChange={e => handleNumChange(e.target.value, setQtdL750)} className="p-3 border-2 border-yellow-100 focus:border-yellow-400 rounded-xl outline-none font-black text-gray-900 text-center" />
-                <input type="number" placeholder="375ml" value={qtdL375} onChange={e => handleNumChange(e.target.value, setQtdL375)} className="p-3 border-2 border-yellow-100 focus:border-yellow-400 rounded-xl outline-none font-black text-gray-900 text-center" />
+                <input type="number" placeholder="750ml" value={qtdL750} onChange={e => handleNumChange(e.target.value, setQtdL750)} className="p-3 bg-gray-50 focus:bg-white border-2 border-transparent focus:border-yellow-400 rounded-xl outline-none font-black text-gray-900 text-center transition-all" />
+                <input type="number" placeholder="375ml" value={qtdL375} onChange={e => handleNumChange(e.target.value, setQtdL375)} className="p-3 bg-gray-50 focus:bg-white border-2 border-transparent focus:border-yellow-400 rounded-xl outline-none font-black text-gray-900 text-center transition-all" />
               </div>
             </div>
-            <div className="flex gap-4 items-center">
-              <div className="w-8 h-8 rounded-full bg-orange-400 flex items-center justify-center text-lg">🍊</div>
+            
+            <div className="flex gap-4 items-center border border-gray-100 p-3 rounded-xl hover:border-orange-400 transition-colors">
+              <div className="w-24 text-right">
+                <span className="block font-black text-gray-900 uppercase text-sm">Arancello</span>
+                <span className="text-[10px] text-gray-400 font-bold tracking-wide">LARANJA</span>
+              </div>
               <div className="flex-1 grid grid-cols-2 gap-3">
-                <input type="number" placeholder="750ml" value={qtdA750} onChange={e => handleNumChange(e.target.value, setQtdA750)} className="p-3 border-2 border-orange-100 focus:border-orange-400 rounded-xl outline-none font-black text-gray-900 text-center" />
-                <input type="number" placeholder="375ml" value={qtdA375} onChange={e => handleNumChange(e.target.value, setQtdA375)} className="p-3 border-2 border-orange-100 focus:border-orange-400 rounded-xl outline-none font-black text-gray-900 text-center" />
+                <input type="number" placeholder="750ml" value={qtdA750} onChange={e => handleNumChange(e.target.value, setQtdA750)} className="p-3 bg-gray-50 focus:bg-white border-2 border-transparent focus:border-orange-400 rounded-xl outline-none font-black text-gray-900 text-center transition-all" />
+                <input type="number" placeholder="375ml" value={qtdA375} onChange={e => handleNumChange(e.target.value, setQtdA375)} className="p-3 bg-gray-50 focus:bg-white border-2 border-transparent focus:border-orange-400 rounded-xl outline-none font-black text-gray-900 text-center transition-all" />
               </div>
             </div>
           </div>
 
-          {/* === OBSERVAÇÃO === */}
           <textarea value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Observações..." className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-gray-400 text-gray-900 font-medium" />
 
-          {/* === TOTAL === */}
-          <div className="pt-4 border-t border-gray-100">
-            <div className="relative mb-4">
+          {/* FOOTER: PAGAMENTO + TOTAL + BOTÃO */}
+          <div className="pt-4 border-t border-gray-100 space-y-4">
+            
+            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-gray-500 uppercase">Status do Pagamento</span>
+                <span className={`text-sm font-black ${pago ? 'text-green-600' : 'text-red-500'}`}>
+                  {pago ? 'JÁ FOI PAGO' : 'PAGAMENTO PENDENTE'}
+                </span>
+              </div>
+              {/* TOGGLE SWITCH */}
+              <button
+                type="button"
+                onClick={() => setPago(!pago)}
+                className={`relative inline-flex h-8 w-14 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${pago ? 'bg-green-500' : 'bg-gray-300'}`}
+              >
+                <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${pago ? 'translate-x-7' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600 font-bold">R$</span>
               <input type="number" step="0.01" required value={valorTotal} onChange={e => handleNumChange(e.target.value, setValorTotal)} className="w-full pl-12 p-4 bg-green-50 border-2 border-green-100 focus:border-green-500 rounded-xl outline-none font-black text-2xl text-green-900" placeholder="0.00" />
             </div>
+
             <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
               {loading ? 'Processando...' : 'Confirmar Venda'}
             </button>
