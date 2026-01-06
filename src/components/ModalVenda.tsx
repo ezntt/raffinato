@@ -16,6 +16,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [tipoCliente, setTipoCliente] = useState('consumidor')
+  const [cpfCnpj, setCpfCnpj] = useState('') // NOVO CAMPO
   const [clienteIdSelecionado, setClienteIdSelecionado] = useState<string | null>(null)
   
   // Autocomplete
@@ -23,11 +24,9 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [sugestoes, setSugestoes] = useState<any[]>([])
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
 
-  // Venda
+  // Venda & Preços
   const [pago, setPago] = useState(false)
   const [observacao, setObservacao] = useState('')
-  
-  // Preços
   const [precoUnit750, setPrecoUnit750] = useState<number | string>(180)
   const [precoUnit375, setPrecoUnit375] = useState<number | string>(100)
   const [valorTotal, setValorTotal] = useState<number | string>('')
@@ -43,18 +42,22 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [loteA750, setLoteA750] = useState<string>('')
   const [loteA375, setLoteA375] = useState<string>('')
 
-  // === MÁSCARA DE TELEFONE ===
-  const formatarTelefone = (valor: string) => {
-    let v = valor.replace(/\D/g, "")
-    v = v.substring(0, 11)
-    if (v.length > 10) v = v.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
-    else if (v.length > 5) v = v.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
-    else if (v.length > 2) v = v.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
-    else if (v !== "") v = v.replace(/^(\d*)/, "($1")
-    return v
+  // === MÁSCARAS ===
+  const formatarTelefone = (v: string) => {
+    v = v.replace(/\D/g, "").substring(0, 11)
+    if (v.length > 10) return v.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
+    if (v.length > 5) return v.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
+    if (v.length > 2) return v.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
+    return v ? v.replace(/^(\d*)/, "($1") : ""
   }
 
-  // === BUSCAR DADOS INICIAIS ===
+  const maskCpfCnpj = (v: string) => {
+    v = v.replace(/\D/g, "")
+    if (v.length <= 11) return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+    return v.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
+  }
+
+  // === LOAD ===
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
@@ -85,10 +88,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     setNome(cliente.nome)
     setTelefone(cliente.telefone || '')
     setTipoCliente(cliente.tipo || 'consumidor')
+    setCpfCnpj(cliente.cpf_cnpj || '') // PREENCHE CPF SE EXISTIR
     setClienteIdSelecionado(cliente.id)
     setMostrarSugestoes(false)
   }
 
+  // Helpers
   const getOpcoesLote = (prod: string, tam: number) => {
     return lotesDisponiveis.filter(l => l.produto === prod && (tam === 750 ? l.estoque_750 > 0 : l.estoque_375 > 0))
   }
@@ -119,21 +124,24 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
   const handleVenda = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!validarItem('Limoncello 750ml', 750, qtdL750, loteL750)) return
     if (!validarItem('Limoncello 375ml', 375, qtdL375, loteL375)) return
     if (!validarItem('Arancello 750ml', 750, qtdA750, loteA750)) return
     if (!validarItem('Arancello 375ml', 375, qtdA375, loteA375)) return
-
     setLoading(true)
 
     try {
       let finalClienteId = clienteIdSelecionado
+      // Cria ou Atualiza cliente básico se não existir
       if (!finalClienteId) {
+        // Busca por telefone pra não duplicar
         const { data: existente } = await supabase.from('Cliente').select('id').eq('telefone', telefone).single()
-        if (existente) finalClienteId = existente.id
-        else {
-            const { data: novo } = await supabase.from('Cliente').insert({ nome, telefone, tipo: tipoCliente }).select().single()
+        if (existente) {
+            finalClienteId = existente.id
+            // Opcional: Atualizar CPF do cliente existente se informado
+            if(cpfCnpj) await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj }).eq('id', finalClienteId)
+        } else {
+            const { data: novo } = await supabase.from('Cliente').insert({ nome, telefone, tipo: tipoCliente, cpf_cnpj: cpfCnpj }).select().single()
             finalClienteId = novo.id
         }
       }
@@ -160,7 +168,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       alert("Venda realizada com sucesso!")
       router.refresh()
       onClose()
-      setNome(''); setTelefone(''); setClienteIdSelecionado(null);
+      setNome(''); setTelefone(''); setCpfCnpj(''); setClienteIdSelecionado(null);
       setQtdL750(''); setQtdL375(''); setQtdA750(''); setQtdA375('');
       setLoteL750(''); setLoteL375(''); setLoteA750(''); setLoteA375('');
     } catch (error: any) {
@@ -206,7 +214,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                         <li key={cli.id} onClick={() => selecionarCliente(cli)} className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-50 last:border-0">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="font-bold text-gray-900 text-sm">{cli.nome}</span>
-                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${cli.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' : cli.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{cli.tipo}</span>
+                                                <div className="flex gap-2">
+                                                    {cli.cpf_cnpj && <span className="text-[10px] bg-gray-200 text-gray-600 px-1 rounded font-mono">{cli.cpf_cnpj}</span>}
+                                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${cli.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' : cli.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{cli.tipo}</span>
+                                                </div>
                                             </div>
                                             <p className="text-xs text-gray-400">{cli.telefone}</p>
                                         </li>
@@ -216,19 +227,24 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                         </div>
 
                         <div className="flex gap-3">
-                            <input 
-                                required 
-                                placeholder="WhatsApp" 
-                                value={telefone} 
-                                onChange={e => setTelefone(formatarTelefone(e.target.value))} 
-                                className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" 
-                            />
+                            <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatarTelefone(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
                             <select value={tipoCliente} onChange={e => setTipoCliente(e.target.value)} className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold">
                                 <option value="consumidor">Pessoa</option>
                                 <option value="emporio">Empório</option>
                                 <option value="restaurante">Restaurante</option>
                             </select>
                         </div>
+                        
+                        {/* NOVO CAMPO CPF/CNPJ NA VENDA */}
+                        <div>
+                            <input 
+                                placeholder="CPF / CNPJ (Opcional para Nota)" 
+                                value={cpfCnpj} 
+                                onChange={e => setCpfCnpj(maskCpfCnpj(e.target.value))} 
+                                className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-mono placeholder-gray-400" 
+                            />
+                        </div>
+
                     </div>
 
                     <div className="flex gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
@@ -237,7 +253,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                     </div>
                 </div>
 
-                {/* DIREITA */}
+                {/* DIREITA - MANTIDA IGUAL */}
                 <div className="space-y-6 flex flex-col h-full">
                     <div className="space-y-3">
                         {/* LIMONCELLO */}
@@ -266,25 +282,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                             <button type="button" onClick={() => setPago(!pago)} className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${pago ? 'bg-green-500' : 'bg-gray-300'}`}><span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${pago ? 'translate-x-7' : 'translate-x-1'}`} /></button>
                          </div>
                          
-                         {/* PREÇO E BOTÃO LADO A LADO NO DESKTOP, COLUNA NO MOBILE */}
                          <div className="flex flex-col md:flex-row gap-4">
                             <div className="relative flex-1">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600 font-bold">R$</span>
-                                <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    required 
-                                    value={valorTotal} 
-                                    onChange={e => handleNumChange(e.target.value, setValorTotal)} 
-                                    className="w-full pl-12 p-4 bg-white border-2 border-green-200 focus:border-green-500 rounded-xl outline-none font-black text-3xl text-green-900" 
-                                    placeholder="0.00" 
-                                />
+                                <input type="number" step="0.01" required value={valorTotal} onChange={e => handleNumChange(e.target.value, setValorTotal)} className="w-full pl-12 p-4 bg-white border-2 border-green-200 focus:border-green-500 rounded-xl outline-none font-black text-3xl text-green-900" placeholder="0.00" />
                             </div>
-                            <button 
-                                type="submit" 
-                                disabled={loading} 
-                                className="w-full cursor-pointer md:flex-1 bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg disabled:opacity-50"
-                            >
+                            <button type="submit" disabled={loading} className="w-full md:flex-1 bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg disabled:opacity-50">
                                 {loading ? '...' : 'Confirmar Venda'}
                             </button>
                          </div>
