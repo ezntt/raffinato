@@ -12,8 +12,8 @@ export default function CalculadoraRaffinato() {
   const [tipo, setTipo] = useState<'limoncello' | 'arancello'>('limoncello')
 
   // === CONSTANTES BASEADAS NA RECEITA ===
-  const RAZAO_ALCOOL = 1400 / 4800 
-  const RAZAO_XAROPE = 3400 / 4800 
+  const RAZAO_ALCOOL = 1400 / 4800 // ~29.16%
+  const RAZAO_XAROPE = 3400 / 4800 // ~70.83%
 
   // Tratamento do Input
   const volumeTotalLitros = Number(litrosInput) || 0
@@ -24,7 +24,7 @@ export default function CalculadoraRaffinato() {
   const volXaropeNecessario = volumeTotalMl * RAZAO_XAROPE
 
   // Dados do Xarope
-  const volOcupadoPor1KgAcucar = 650
+  const volOcupadoPor1KgAcucar = 650 // Fator de deslocamento volumétrico
   const qtdAguaPorKgAcucar = tipo === 'limoncello' ? 2250 : 2500
   const rendimentoXaropePorReceita = volOcupadoPor1KgAcucar + qtdAguaPorKgAcucar
 
@@ -33,7 +33,7 @@ export default function CalculadoraRaffinato() {
   const totalAcucarGramas = kgAcucarNecessarios * 1000
   const totalAguaMl = kgAcucarNecessarios * qtdAguaPorKgAcucar
 
-  // Cálculo de Garrafas Estimadas (para visualização)
+  // Cálculo de Garrafas Estimadas
   const garrafasEstimadas = volumeTotalLitros / 0.75
 
   // Função auxiliar input
@@ -114,8 +114,10 @@ export default function CalculadoraRaffinato() {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
         
-        {/* COLUNA ESQUERDA (INPUTS) */}
+        {/* COLUNA ESQUERDA (INPUTS + INFO TÉCNICA) */}
         <div className="md:col-span-4 space-y-6">
+          
+          {/* Card de Input */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Planejamento</label>
             
@@ -123,7 +125,7 @@ export default function CalculadoraRaffinato() {
               <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
               <div className="flex gap-2">
                 <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
-                <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 rounded-lg cursor-pointer font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
+                <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
               </div>
             </div>
 
@@ -131,16 +133,41 @@ export default function CalculadoraRaffinato() {
               <span className="block text-sm font-bold text-gray-700 mb-2">Volume Total Desejado (Litros)</span>
               <div className="relative">
                 <input 
-                  type="number" 
+                  type="number"
+                  placeholder='Ex: 50'
                   value={litrosInput} 
-                  placeholder="Ex: 50" 
                   onChange={(e) => handleChange(e.target.value)} 
                   className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" 
                 />
               </div>
             </div>
-
           </div>
+
+          {/* CARD DE INFORMAÇÕES TÉCNICAS (NOVO) */}
+          <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 space-y-4">
+             <h3 className="text-blue-900 font-bold text-sm flex items-center gap-2">
+               ℹ️ Memória de Cálculo
+             </h3>
+             <ul className="text-xs text-blue-800 space-y-3 opacity-90 leading-relaxed">
+               <li>
+                 <strong className="block mb-1 text-blue-900">Proporção da Mistura:</strong>
+                 O volume final é composto aproximadamente por <strong>29% de Base Alcoólica</strong> e <strong>71% de Xarope</strong> (Água + Açúcar).
+               </li>
+               <li className="border-t border-blue-200 pt-2">
+                 <strong className="block mb-1 text-blue-900">Física do Açúcar:</strong>
+                 O cálculo considera o deslocamento volumétrico: <strong>1kg de açúcar refinado ocupa 650ml</strong> de volume quando diluído.
+               </li>
+               <li className="border-t border-blue-200 pt-2">
+                 <strong className="block mb-1 text-blue-900">Diluição do Xarope ({tipo}):</strong>
+                 {tipo === 'limoncello' ? (
+                    <span>Para cada 1kg de açúcar, adicionamos <strong>2.25 Litros</strong> de água.</span>
+                 ) : (
+                    <span>Para cada 1kg de açúcar, adicionamos <strong>2.50 Litros</strong> de água.</span>
+                 )}
+               </li>
+             </ul>
+          </div>
+
         </div>
 
         {/* COLUNA DIREITA (RECEITA) */}
@@ -155,7 +182,7 @@ export default function CalculadoraRaffinato() {
               <div className="space-y-8">
                 {/* ÁLCOOL */}
                 <div>
-                  <p className="text-xs text-yellow-500 font-bold uppercase mb-2">1. Base Alcoólica</p>
+                  <p className="text-xs text-yellow-500 font-bold uppercase mb-2">1. Base Alcoólica (29%)</p>
                   <div className="flex justify-between items-end border-b border-gray-800 pb-2">
                     <span className="text-gray-300">Álcool de Cereais</span>
                     <span className="text-3xl font-mono font-bold text-yellow-400">
@@ -166,7 +193,7 @@ export default function CalculadoraRaffinato() {
 
                 {/* XAROPE */}
                 <div>
-                  <p className="text-xs text-blue-400 font-bold uppercase mb-2">2. Preparo do Xarope</p>
+                  <p className="text-xs text-blue-400 font-bold uppercase mb-2">2. Preparo do Xarope (71%)</p>
                   <div className="space-y-4">
                     <div className="flex justify-between items-end border-b border-gray-800 pb-2">
                       <span className="text-gray-300">Água Filtrada</span>
@@ -185,7 +212,7 @@ export default function CalculadoraRaffinato() {
               </div>
             </div>
 
-            {/* RESUMO DO VOLUME (AGORA MOSTRA GARRAFAS) */}
+            {/* RESUMO DO VOLUME */}
             <div className="mt-8 pt-6 border-t border-gray-700">
                <div className="bg-gray-800 p-4 rounded-xl border border-green-900/50 flex justify-between items-center">
                   <span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado (750ml)</span>
