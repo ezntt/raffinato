@@ -4,55 +4,93 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // 1. Tenta o login
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-    })
+    setLoading(true)
+    setError(null)
 
-    if (error) {
-        alert("Erro ao entrar: " + error.message)
-        return
-    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (data.session) {
-        // 2. O segredo: dar um "refresh" para o middleware ler o novo cookie
-        router.refresh() 
-        
-        // 3. Redirecionar
-        setTimeout(() => {
-        router.push('/')
-        }, 100)
+      if (error) throw error
+
+      // Login com sucesso!
+      router.push('/') // Redireciona para o Dashboard
+      router.refresh() // Força atualização dos dados
+
+    } catch (err: any) {
+      setError('Erro ao entrar: Verifique seu e-mail e senha.')
+    } finally {
+      setLoading(false)
     }
-    }
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 text-black">
-      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6 text-yellow-600 text-center">Raffinato 🍋</h1>
-        <div className="space-y-4">
-          <input 
-            type="email" placeholder="E-mail" 
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-yellow-500"
-          />
-          <input 
-            type="password" placeholder="Senha" 
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-yellow-500"
-          />
-          <button type="submit" className="w-full bg-yellow-500 text-white py-2 rounded font-bold hover:bg-yellow-600">
-            Entrar no Sistema
-          </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
+        
+        {/* Cabeçalho */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black text-yellow-600 tracking-tight mb-2">RAFFINATO 🍋</h1>
+          <p className="text-gray-500 font-medium">Faça login para gerenciar a produção.</p>
         </div>
-      </form>
+
+        {/* Mensagem de Erro */}
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-6 border border-red-100 text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Formulário */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase ml-1">E-mail</label>
+            <input 
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-yellow-500 focus:ring-2 ring-yellow-100 transition-all font-bold text-gray-900"
+              placeholder="admin@raffinato.com"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Senha</label>
+            <input 
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-yellow-500 focus:ring-2 ring-yellow-100 transition-all font-bold text-gray-900"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all mt-4 disabled:opacity-50"
+          >
+            {loading ? 'Entrando...' : 'Acessar Sistema'}
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-gray-300 font-bold mt-8 uppercase tracking-widest">
+          Área Restrita
+        </p>
+
+      </div>
     </div>
   )
 }
