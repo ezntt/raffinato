@@ -43,18 +43,17 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
     <div className="space-y-6">
       
       {/* === CABEÇALHO COM TOTAIS DINÂMICOS === */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Histórico de Vendas</h1>
         </div>
         
         <div className="flex gap-4 w-full md:w-auto">
-           {/* Card A Receber (Reage ao clique) */}
-           <div className="flex-1 md:flex-none bg-red-50 px-6 py-4 rounded-2xl border border-red-100 text-right">
+          {/* Cards... */}
+          <div className="flex-1 md:flex-none bg-red-50 px-6 py-4 rounded-2xl border border-red-100 text-right">
             <span className="text-xs uppercase font-bold text-red-400 block">A Receber</span>
             <span className="text-xl font-black text-red-900">R$ {totalPendente.toFixed(2)}</span>
           </div>
-          {/* Card Total */}
           <div className="flex-1 md:flex-none bg-green-50 px-6 py-4 rounded-2xl border border-green-100 text-right">
             <span className="text-xs uppercase font-bold text-green-600 block">Faturamento</span>
             <span className="text-3xl font-black text-green-900">R$ {faturamentoTotal.toFixed(2)}</span>

@@ -109,7 +109,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
       <div className="flex justify-end mb-4">
         <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2"
+            className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2"
         >
             <span>+ Novo Cliente</span>
         </button>
@@ -183,13 +183,13 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                 <td className="p-4 text-right">
                   {editingId === cliente.id ? (
                       <div className="flex justify-end gap-2">
-                          <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600 font-bold text-sm">Cancelar</button>
-                          <button onClick={() => saveEdit(cliente.id)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-sm">Salvar</button>
+                          <button onClick={cancelEdit} className="text-gray-400 cursor-pointer hover:text-gray-600 font-bold text-sm">Cancelar</button>
+                          <button onClick={() => saveEdit(cliente.id)} className="bg-green-600 cursor-pointer hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-sm">Salvar</button>
                       </div>
                   ) : (
                       <button 
                           onClick={() => startEdit(cliente)} 
-                          className="text-gray-300 hover:text-blue-600 font-bold text-sm transition-colors"
+                          className="text-gray-300 cursor-pointer hover:text-blue-600 font-bold text-sm transition-colors"
                       >
                           Editar ✏️
                       </button>

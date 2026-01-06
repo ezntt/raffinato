@@ -122,8 +122,8 @@ export default function CalculadoraRaffinato() {
             <div className="mb-6">
               <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
               <div className="flex gap-2">
-                <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
-                <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
+                <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
+                <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 rounded-lg cursor-pointer font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
               </div>
             </div>
 

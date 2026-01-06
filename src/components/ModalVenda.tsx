@@ -192,8 +192,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
         <form onSubmit={handleVenda} className="flex-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                {/* ESQUERDA */}
                 <div className="space-y-6">
                     <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Dados do Cliente</span>

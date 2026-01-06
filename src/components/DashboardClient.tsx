@@ -32,22 +32,23 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       
-      <header className="mb-10 flex flex-col md:flex-row justify-between items-end gap-4">
+      <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Painel Central & Estoque</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Dashboard & Estoque 📦</h1>
+          <p className="text-gray-500 font-medium">Visão geral da produção e produtos acabados.</p>
         </div>
         <div className="flex gap-3">
-           {/* BOTÃO NOVA VENDA VOLTOU AQUI */}
-           <button 
-             onClick={() => setIsVendaOpen(true)}
-             className="bg-green-600 cursor-pointer text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"
-           >
-             <span>💰 Nova Venda</span>
-           </button>
+          {/* Botões... */}
+          <button 
+            onClick={() => setIsVendaOpen(true)}
+            className="bg-green-600 cursor-pointer text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"
+          >
+            <span>$ Nova Venda</span>
+          </button>
 
-           <Link href="/calculadora" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2">
-             <span>+ Novo Lote</span>
-           </Link>
+          <Link href="/calculadora" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2">
+            <span>+ Novo Lote</span>
+          </Link>
         </div>
       </header>
 

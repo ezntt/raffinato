@@ -16,8 +16,7 @@ export default async function ClientesPage() {
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto mt-12 md:mt-0">
       <header className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Carteira de Clientes 👥</h1>
-        <p className="text-gray-500 font-medium">Gerencie seus contatos e parceiros.</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Carteira de Clientes</h1>
       </header>
 
       {/* 2. Passa os dados para o componente interativo */}
