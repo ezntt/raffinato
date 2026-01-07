@@ -85,8 +85,7 @@ export default function ConfiguracoesPage() {
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto mt-12 md:mt-0 mb-20">
       <header className="mb-8 border-b border-gray-100 pb-6">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Configurações ⚙️</h1>
-        <p className="text-gray-500 font-medium">Dados da empresa para emissão fiscal futura.</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Configurações</h1>
       </header>
 
       <form onSubmit={handleSave} className="space-y-8">

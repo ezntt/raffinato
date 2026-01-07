@@ -12,8 +12,8 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
   const [selectedId, setSelectedId] = useState('')
   const [qtdCompra, setQtdCompra] = useState('')
   const [valorTotal, setValorTotal] = useState('')
-  const [codigoCompra, setCodigoCompra] = useState('') // NOVO
-  const [fornecedor, setFornecedor] = useState('')     // NOVO
+  const [codigoCompra, setCodigoCompra] = useState('') 
+  const [fornecedor, setFornecedor] = useState('')     
   const [obs, setObs] = useState('')
 
   const ingredientes = insumos.filter(i => i.categoria === 'ingrediente')
@@ -37,12 +37,21 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
             tipo: 'compra',
             quantidade: Number(qtdCompra),
             valor_total: Number(valorTotal),
-            codigo_compra: codigoCompra, // Salva codigo
-            fornecedor: fornecedor,      // Salva fornecedor
+            codigo_compra: codigoCompra, 
+            fornecedor: fornecedor,      
             observacao: obs
         })
 
         if (error) throw error
+
+        // (Opcional) Se você já criou a tabela Logs, pode descomentar a linha abaixo para registrar lá também:
+        /*
+        await supabase.from('Logs').insert({
+            categoria: 'ESTOQUE', acao: 'COMPRA',
+            descricao: `Comprou ${qtdCompra} ${itemSelecionado.unidade} de ${itemSelecionado.nome}`,
+            detalhes: { fornecedor, nf: codigoCompra, valor: valorTotal }
+        })
+        */
 
         alert("Compra registrada!")
         setModalOpen(false)
@@ -56,6 +65,15 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
     }
   }
 
+  // Função auxiliar para formatar numero (Arredonda para baixo, max 2 decimais)
+  const formatarQuantidade = (valor: number) => {
+    if (!valor) return '0'
+    // Lógica: 10.569 * 100 = 1056.9 -> floor = 1056 -> / 100 = 10.56
+    const arredondadoParaBaixo = Math.floor(valor * 100) / 100
+    // Formata com vírgula (pt-BR)
+    return arredondadoParaBaixo.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+  }
+
   const CardInsumo = ({ item }: { item: any }) => (
     <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:border-gray-300 transition-colors">
         <div>
@@ -66,7 +84,8 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
         </div>
         <div className="text-right">
             <span className="block text-2xl font-black text-gray-900">
-                {item.quantidade_atual} <small className="text-sm text-gray-500 font-medium">{item.unidade}</small>
+                {/* AQUI APLICAMOS A FORMATAÇÃO */}
+                {formatarQuantidade(item.quantidade_atual)} <small className="text-sm text-gray-500 font-medium">{item.unidade}</small>
             </span>
             {item.quantidade_atual <= item.estoque_minimo && (
                 <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full">

@@ -238,7 +238,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                 
                 {/* Cabeçalho Fixo do Modal */}
                 <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100">
-                    <h2 className="text-xl md:text-2xl font-black text-gray-900">{modoEdicao ? 'Editar Cliente' : 'Novo Cliente'} 👤</h2>
+                    <h2 className="text-xl md:text-2xl font-black text-gray-900">{modoEdicao ? 'Editar Cliente' : 'Novo Cliente'}</h2>
                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
                 </div>
                 
