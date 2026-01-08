@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { PRECO_PADRAO } from '@/lib/constants'
 
 interface Props {
   isOpen: boolean
@@ -27,8 +28,8 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   // Venda & Preços
   const [pago, setPago] = useState(false)
   const [observacao, setObservacao] = useState('')
-  const [precoUnit750, setPrecoUnit750] = useState<number | string>(180)
-  const [precoUnit375, setPrecoUnit375] = useState<number | string>(100)
+  const [precoUnit750, setPrecoUnit750] = useState<number | string>(PRECO_PADRAO.GARRAFA_750)
+  const [precoUnit375, setPrecoUnit375] = useState<number | string>(PRECO_PADRAO.GARRAFA_375)
   const [valorTotal, setValorTotal] = useState<number | string>('')
 
   // Quantidades e Lotes

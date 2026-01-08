@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { NOME_INSUMO } from '@/lib/constants'
 
 interface Props {
   isOpen: boolean
@@ -43,10 +44,17 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
 
         if (data) {
             // 1. Definição dos nomes EXATOS conforme sua lista
-            const nomeGarrafa = `Garrafa Vidro ${tamanho}ml`
-            const nomeRotulo = `Rótulo ${capitalize(lote.produto)} ${tamanho}ml` // Ex: Rótulo Limoncello 750ml
-            const nomeTampa = "Tampa"
-            const nomeLacre = "Lacre"
+            const nomeGarrafa = tamanho === 750 ? NOME_INSUMO.GARRAFA_750 : NOME_INSUMO.GARRAFA_375
+            
+            let nomeRotulo = ''
+            if (lote.produto === 'limoncello') {
+                nomeRotulo = tamanho === 750 ? NOME_INSUMO.ROTULO_LIMONCELLO_750 : NOME_INSUMO.ROTULO_LIMONCELLO_375
+            } else {
+                nomeRotulo = tamanho === 750 ? NOME_INSUMO.ROTULO_ARANCELLO_750 : NOME_INSUMO.ROTULO_ARANCELLO_375
+            }
+
+            const nomeTampa = NOME_INSUMO.TAMPA
+            const nomeLacre = NOME_INSUMO.LACRE
 
             // 2. Busca Exata
             const itemGarrafa = data.find(i => i.nome === nomeGarrafa)

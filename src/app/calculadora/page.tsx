@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { RECEITA } from '@/lib/constants'
 
 export default function CalculadoraRaffinato() {
   const router = useRouter()
@@ -41,8 +42,8 @@ export default function CalculadoraRaffinato() {
   }
 
   // === CONSTANTES ===
-  const RAZAO_ALCOOL = 1400 / 4800 
-  const RAZAO_XAROPE = 3400 / 4800 
+  const RAZAO_ALCOOL = RECEITA.RAZAO_ALCOOL 
+  const RAZAO_XAROPE = RECEITA.RAZAO_XAROPE 
 
   // Tratamento do Input
   const volumeTotalLitros = Number(litrosInput.replace(',', '.')) || 0
@@ -53,8 +54,8 @@ export default function CalculadoraRaffinato() {
   const volAlcoolNecessarioL = volAlcoolNecessarioMl / 1000
   const volXaropeNecessario = volumeTotalMl * RAZAO_XAROPE
 
-  const volOcupadoPor1KgAcucar = 650 
-  const qtdAguaPorKgAcucar = tipo === 'limoncello' ? 2250 : 2500
+  const volOcupadoPor1KgAcucar = RECEITA.VOLUME_ACUCAR_POR_KG 
+  const qtdAguaPorKgAcucar = tipo === 'limoncello' ? RECEITA.AGUA_POR_KG_LIMONCELLO : RECEITA.AGUA_POR_KG_ARANCELLO
   const rendimentoXaropePorReceita = volOcupadoPor1KgAcucar + qtdAguaPorKgAcucar
 
   const kgAcucarNecessarios = volXaropeNecessario / rendimentoXaropePorReceita
@@ -247,7 +248,7 @@ export default function CalculadoraRaffinato() {
                         <RowEstoque label="Açúcar" atual={estoqueAcucar?.qtd || 0} necessario={kgAcucarNecessarios} saldo={saldoAcucar} unidade="kg" />
                         {!temInsumos && (
                              <div className="mt-3 text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded text-center uppercase tracking-wide">
-                                Estoque Insuficiente
+                                 Estoque Insuficiente
                              </div>
                         )}
                     </div>
