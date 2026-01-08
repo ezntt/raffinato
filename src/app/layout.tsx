@@ -6,7 +6,7 @@ import { AdminLayout } from '@/components/AdminLayout' // Importa nosso novo ger
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Raffinato Manager',
+  title: 'RAFFINATO',
   description: 'Sistema de Gestão de Produção',
 }
 
