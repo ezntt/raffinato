@@ -9,6 +9,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
   const [loteSelecionado, setLoteSelecionado] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const abrirEngarrafar = (lote: any) => {
     setLoteSelecionado(lote)
@@ -17,8 +18,8 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
 
   // Função para mudar o status de 'em_infusao' para 'pronto'
   const liberarLote = async (id: string) => {
-    const confirm = window.confirm("Confirma que este lote passou no teste de qualidade e pode ser engarrafado?")
-    if (!confirm) return
+    // Confirmação simples
+    if (!window.confirm("Deseja aprovar este lote para engarrafamento?")) return
 
     setLoadingId(id)
     try {
@@ -29,11 +30,35 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
 
       if (error) throw error
       
-      router.refresh() // Atualiza a tela para mostrar o botão de engarrafar
+      router.refresh()
     } catch (err) {
       alert("Erro ao liberar lote.")
     } finally {
       setLoadingId(null)
+    }
+  }
+
+  // Função de Excluir Lote (Mantida)
+  const excluirLote = async (id: string) => {
+    const confirmacao = window.confirm(
+        `⛔ PERIGO: Deseja EXCLUIR o lote ${id}?\n\n` +
+        `Isso irá reverter a criação, devolvendo o Álcool e o Açúcar para o estoque.\n` +
+        `Essa ação não pode ser desfeita.`
+    )
+    
+    if (!confirmacao) return
+
+    setDeletingId(id)
+    try {
+        const { error } = await supabase.rpc('excluir_lote_reverter', { p_lote_id: id })
+        if (error) throw error
+        
+        alert("Lote excluído e insumos estornados com sucesso!")
+        router.refresh()
+    } catch (err: any) {
+        alert("Erro ao excluir: " + err.message)
+    } finally {
+        setDeletingId(null)
     }
   }
 
@@ -45,23 +70,22 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
         )}
 
         {initialLotes.map((lote) => {
-          // AINDA precisamos checar a data para SUGERIR a liberação, 
-          // mas o engarrafamento dependerá estritamente do STATUS.
-          const hoje = new Date()
           const previsao = new Date(lote.data_previsao)
-          hoje.setHours(0, 0, 0, 0)
-          previsao.setHours(0, 0, 0, 0)
-
-          const dataVenceu = hoje >= previsao
-          const isPronto = lote.status === 'pronto' // Agora confiamos no banco!
-
-          // Calcula dias restantes (visual)
-          const diffTime = Math.abs(previsao.getTime() - hoje.getTime())
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) 
+          const isPronto = lote.status === 'pronto'
 
           return (
-            <div key={lote.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div key={lote.id} className="relative bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group">
               
+              {/* BOTÃO EXCLUIR (Discreto no topo direito) */}
+              <button 
+                onClick={(e) => { e.stopPropagation(); excluirLote(lote.id) }}
+                disabled={deletingId === lote.id}
+                className="absolute top-4 right-4 text-gray-300 hover:text-red-600 font-bold text-xs p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                title="Excluir Lote e Reverter Insumos"
+              >
+                {deletingId === lote.id ? '⏳' : '🗑️'}
+              </button>
+
               {/* Infos do Lote */}
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -72,18 +96,14 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                     {lote.produto}
                   </span>
                   
-                  {/* Badge de Status Baseado no Banco */}
+                  {/* Badge de Status Simplificado */}
                   {isPronto ? (
                     <span className="text-[10px] font-bold uppercase bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">
                       ✓ Aprovado
                     </span>
-                  ) : dataVenceu ? (
-                    <span className="text-[10px] font-bold uppercase bg-blue-100 text-blue-700 px-2 py-1 rounded border border-blue-200 animate-pulse">
-                      🔔 Aguardando Análise
-                    </span>
                   ) : (
-                    <span className="text-[10px] font-bold uppercase bg-gray-100 text-gray-500 px-2 py-1 rounded border border-gray-200 flex items-center gap-1">
-                      ⏳ Maturando
+                    <span className="text-[10px] font-bold uppercase bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
+                      ⏳ Em Infusão
                     </span>
                   )}
                 </div>
@@ -95,44 +115,31 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                 
                 <p className="text-xs text-gray-400 mt-1 flex gap-2">
                   <span>Início: {new Date(lote.data_inicio).toLocaleDateString('pt-BR')}</span>
-                  <span>•</span>
-                  <span>Previsão: {previsao.toLocaleDateString('pt-BR')}</span>
                 </p>
               </div>
 
-              {/* === LÓGICA DE BOTÕES INTELIGENTES === */}
+              {/* === BOTÕES DE AÇÃO (Sem travas de data) === */}
               <div className="w-full md:w-auto">
                 
-                {/* CENÁRIO 1: Está pronto no banco? -> ENGARRAFAR */}
-                {isPronto && (
+                {isPronto ? (
+                  // Se já está pronto -> Mostra ENGARRAFAR
                   <button
                     onClick={() => abrirEngarrafar(lote)}
                     className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 w-full"
                   >
                     <span>🍾 Engarrafar</span>
                   </button>
-                )}
-
-                {/* CENÁRIO 2: Data venceu mas não está pronto? -> LIBERAR */}
-                {!isPronto && dataVenceu && (
+                ) : (
+                  // Se NÃO está pronto -> Mostra APROVAR (Sempre disponível)
                   <button
                     onClick={() => liberarLote(lote.id)}
                     disabled={loadingId === lote.id}
-                    className="bg-green-500 hover:bg-green-600 cursor-pointer text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 w-full"
+                    className="bg-white border-2 border-green-500 text-green-600 hover:bg-green-50 cursor-pointer px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 w-full"
                   >
                     {loadingId === lote.id ? 'Salvando...' : '✅ Aprovar Lote'}
                   </button>
                 )}
 
-                {/* CENÁRIO 3: Data não venceu? -> ESPERAR */}
-                {!isPronto && !dataVenceu && (
-                  <button
-                    disabled
-                    className="bg-gray-100 text-gray-400 border border-gray-200 px-6 py-3 rounded-xl font-bold text-sm cursor-not-allowed flex items-center justify-center gap-2 w-full"
-                  >
-                    <span>✋ Falta(m) {diffDays} dia(s)</span>
-                  </button>
-                )}
               </div>
 
             </div>

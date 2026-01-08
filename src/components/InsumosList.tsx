@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { ComprasList } from './ComprasList'
 
-export function InsumosList({ insumos }: { insumos: any[] }) {
+export function InsumosList({ insumos, historico }: { insumos: any[], historico: any[] }) {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque')
+  
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  
-  // States do Modal de Compra
   const [selectedId, setSelectedId] = useState('')
   const [qtdCompra, setQtdCompra] = useState('')
   const [valorTotal, setValorTotal] = useState('')
@@ -26,12 +27,10 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
     
     setLoading(true)
     try {
-        // Atualiza a tabela Insumo
         await supabase.from('Insumo')
             .update({ quantidade_atual: itemSelecionado.quantidade_atual + Number(qtdCompra) })
             .eq('id', selectedId)
 
-        // Salva histórico com os dados novos
         const { error } = await supabase.from('MovimentacaoInsumo').insert({
             insumo_id: selectedId,
             tipo: 'compra',
@@ -43,15 +42,6 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
         })
 
         if (error) throw error
-
-        // (Opcional) Se você já criou a tabela Logs, pode descomentar a linha abaixo para registrar lá também:
-        /*
-        await supabase.from('Logs').insert({
-            categoria: 'ESTOQUE', acao: 'COMPRA',
-            descricao: `Comprou ${qtdCompra} ${itemSelecionado.unidade} de ${itemSelecionado.nome}`,
-            detalhes: { fornecedor, nf: codigoCompra, valor: valorTotal }
-        })
-        */
 
         alert("Compra registrada!")
         setModalOpen(false)
@@ -65,62 +55,95 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
     }
   }
 
-  // Função auxiliar para formatar numero (Arredonda para baixo, max 2 decimais)
   const formatarQuantidade = (valor: number) => {
+    // Se for 0 ou undefined
     if (!valor) return '0'
-    // Lógica: 10.569 * 100 = 1056.9 -> floor = 1056 -> / 100 = 10.56
-    const arredondadoParaBaixo = Math.floor(valor * 100) / 100
-    // Formata com vírgula (pt-BR)
-    return arredondadoParaBaixo.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+    // Arredonda para 2 casas decimais
+    const arredondado = Math.floor(valor * 100) / 100
+    return arredondado.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
   }
 
-  const CardInsumo = ({ item }: { item: any }) => (
-    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:border-gray-300 transition-colors">
-        <div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                {item.categoria}
-            </span>
-            <h3 className="font-bold text-gray-900 text-lg">{item.nome}</h3>
-        </div>
-        <div className="text-right">
-            <span className="block text-2xl font-black text-gray-900">
-                {/* AQUI APLICAMOS A FORMATAÇÃO */}
-                {formatarQuantidade(item.quantidade_atual)} <small className="text-sm text-gray-500 font-medium">{item.unidade}</small>
-            </span>
-            {item.quantidade_atual <= item.estoque_minimo && (
-                <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full">
-                    Baixo
-                </span>
-            )}
-        </div>
-    </div>
-  )
+  const CardInsumo = ({ item }: { item: any }) => {
+    // Verifica se é negativo para aplicar a cor
+    const isNegativo = item.quantidade_atual < 0
+
+    return (
+      <div className={`bg-white p-4 rounded-2xl border shadow-sm flex justify-between items-center transition-colors ${isNegativo ? 'border-red-200 bg-red-50/30' : 'border-gray-100 hover:border-gray-300'}`}>
+          <div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                  {item.categoria}
+              </span>
+              <h3 className="font-bold text-gray-900 text-lg">{item.nome}</h3>
+          </div>
+          <div className="text-right">
+              {/* AQUI ESTÁ A MUDANÇA DE COR */}
+              <span className={`block text-2xl font-black ${isNegativo ? 'text-red-600' : 'text-gray-900'}`}>
+                  {formatarQuantidade(item.quantidade_atual)} 
+                  <small className={`text-sm font-medium ml-1 ${isNegativo ? 'text-red-400' : 'text-gray-500'}`}>
+                    {item.unidade}
+                  </small>
+              </span>
+              
+              {item.quantidade_atual <= item.estoque_minimo && !isNegativo && (
+                  <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full">
+                      Baixo
+                  </span>
+              )}
+
+              {isNegativo && (
+                  <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-1 rounded-full animate-pulse">
+                      NEGATIVO
+                  </span>
+              )}
+          </div>
+      </div>
+    )
+  }
 
   return (
     <>
-      <div className="flex justify-end mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
+            <button 
+                onClick={() => setActiveTab('estoque')}
+                className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+            >
+                📦 Estoque Atual
+            </button>
+            <button 
+                onClick={() => setActiveTab('historico')}
+                className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}
+            >
+                📜 Histórico Compras
+            </button>
+        </div>
+
         <button 
             onClick={() => setModalOpen(true)}
-            className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center"
         >
             <span>+ Registrar Compra</span>
         </button>
       </div>
 
-      <div className="space-y-8">
-        <section>
-            <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">🍋 Ingredientes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ingredientes.map(item => <CardInsumo key={item.id} item={item} />)}
-            </div>
-        </section>
-        <section>
-            <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">📦 Embalagens</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {embalagens.map(item => <CardInsumo key={item.id} item={item} />)}
-            </div>
-        </section>
-      </div>
+      {activeTab === 'estoque' ? (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <section>
+                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">🍋 Ingredientes</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {ingredientes.map(item => <CardInsumo key={item.id} item={item} />)}
+                </div>
+            </section>
+            <section>
+                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">📦 Embalagens</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {embalagens.map(item => <CardInsumo key={item.id} item={item} />)}
+                </div>
+            </section>
+          </div>
+      ) : (
+          <ComprasList compras={historico} />
+      )}
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -151,7 +174,6 @@ export function InsumosList({ insumos }: { insumos: any[] }) {
                         </div>
                     </div>
 
-                    {/* NOVOS CAMPOS DE CONTROLE */}
                     <div className="flex gap-4">
                         <div className="flex-1">
                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nº Nota / Pedido</label>

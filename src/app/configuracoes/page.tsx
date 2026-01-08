@@ -18,6 +18,7 @@ export default function ConfiguracoesPage() {
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState('')
   const [numero, setNumero] = useState('')
+  const [complemento, setComplemento] = useState('')
   const [bairro, setBairro] = useState('')
   const [cidade, setCidade] = useState('Florianópolis')
   const [estado, setEstado] = useState('SC')
@@ -43,6 +44,7 @@ export default function ConfiguracoesPage() {
         setCep(data.cep || '')
         setEndereco(data.endereco || '')
         setNumero(data.numero || '')
+        setComplemento(data.complemento || '')
         setBairro(data.bairro || '')
         setCidade(data.cidade || '')
         setEstado(data.estado || '')
@@ -59,7 +61,7 @@ export default function ConfiguracoesPage() {
 
     const payload = {
         razao_social: razao, nome_fantasia: fantasia, cnpj, inscricao_estadual: ie, email_contato: email,
-        cep, endereco, numero, bairro, cidade, estado
+        cep, endereco, numero, complemento, bairro, cidade, estado
     }
 
     try {
@@ -139,7 +141,7 @@ export default function ConfiguracoesPage() {
                 </div>
                 <div className="md:col-span-3">
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Complemento</label>
-                    <input value={bairro} onChange={e => setBairro(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" />
+                    <input value={complemento} onChange={e => setComplemento(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" />
                 </div>
                 
                 {/* BAIRRO - Agora ocupa 2 colunas */}

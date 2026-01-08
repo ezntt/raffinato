@@ -7,7 +7,10 @@ export default function CalculadoraRaffinato() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   
-  // Input agora aceita string livremente para não travar a digitação no celular
+  // === NOVOS ESTADOS ===
+  // Input manual do Lote (String livre)
+  const [loteManual, setLoteManual] = useState<string>('')
+  
   const [litrosInput, setLitrosInput] = useState<string>('')
   const [tipo, setTipo] = useState<'limoncello' | 'arancello'>('limoncello')
 
@@ -26,7 +29,6 @@ export default function CalculadoraRaffinato() {
         if (error) throw error
         
         if (data) {
-            // Lógica flexível para encontrar os itens (ajuste as strings se necessário)
             const acucar = data.find(i => i.nome.toLowerCase().includes('acucar') || i.nome.toLowerCase().includes('açúcar'))
             const alcool = data.find(i => i.nome.toLowerCase().includes('alcool') || i.nome.toLowerCase().includes('álcool') || i.nome.toLowerCase().includes('cereais'))
 
@@ -42,14 +44,13 @@ export default function CalculadoraRaffinato() {
   const RAZAO_ALCOOL = 1400 / 4800 
   const RAZAO_XAROPE = 3400 / 4800 
 
-  // Tratamento do Input (Converte vírgula para ponto para cálculo)
+  // Tratamento do Input
   const volumeTotalLitros = Number(litrosInput.replace(',', '.')) || 0
   const volumeTotalMl = volumeTotalLitros * 1000
 
-  // === CÁLCULOS DA RECEITA ===
+  // === CÁLCULOS ===
   const volAlcoolNecessarioMl = volumeTotalMl * RAZAO_ALCOOL
   const volAlcoolNecessarioL = volAlcoolNecessarioMl / 1000
-
   const volXaropeNecessario = volumeTotalMl * RAZAO_XAROPE
 
   const volOcupadoPor1KgAcucar = 650 
@@ -59,65 +60,61 @@ export default function CalculadoraRaffinato() {
   const kgAcucarNecessarios = volXaropeNecessario / rendimentoXaropePorReceita
   const totalAcucarGramas = kgAcucarNecessarios * 1000
   const totalAguaMl = kgAcucarNecessarios * qtdAguaPorKgAcucar
-
   const garrafasEstimadas = volumeTotalLitros / 0.75
 
-  // === CÁLCULOS DE PREVISÃO DE ESTOQUE ===
+  // === PREVISÃO DE ESTOQUE ===
   const saldoAcucar = (estoqueAcucar?.qtd || 0) - kgAcucarNecessarios
   const saldoAlcool = (estoqueAlcool?.qtd || 0) - volAlcoolNecessarioL
   const temInsumos = saldoAcucar >= 0 && saldoAlcool >= 0
 
-  // Função Input Melhorada para Mobile
-  const handleChange = (valor: string) => {
+  const handleChangeLitros = (valor: string) => {
     if (/^[\d,.]*$/.test(valor)) {
         setLitrosInput(valor)
     }
   }
 
-  // === AÇÃO: SALVAR LOTE E DESCONTAR ESTOQUE ===
+  // === AÇÃO: SALVAR LOTE ===
   const handleSalvarLote = async () => {
+    // 1. Validações Básicas
+    if (!loteManual.trim()) {
+        alert("Por favor, digite o NÚMERO DO LOTE (ex: data da compra da fruta).")
+        return
+    }
     if (volumeTotalLitros <= 0) {
       alert("Insira uma quantidade de litros válida.")
       return
     }
 
-    // Validação de Estoque antes de salvar
+    // 2. Validação de Estoque
     if (!temInsumos) {
         const confirmar = window.confirm("⚠️ ATENÇÃO: Seu estoque consta como INSUFICIENTE. Deseja continuar mesmo assim e negativar o estoque?")
         if (!confirmar) return
     } else {
-        if (!window.confirm(`Iniciar lote de ${volumeTotalLitros}L de ${tipo}?`)) return
+        if (!window.confirm(`Iniciar lote "${loteManual}" com ${volumeTotalLitros}L de ${tipo}?`)) return
     }
 
     setLoading(true)
 
     try {
-        // 1. Gerar ID do Lote
-        const hoje = new Date()
-        const dia = String(hoje.getDate()).padStart(2, '0')
-        const mes = String(hoje.getMonth() + 1).padStart(2, '0')
-        const ano = String(hoje.getFullYear()).slice(-2)
-        const idBase = `${dia}${mes}${ano}`
+        // 3. Verificar se o ID já existe (Para evitar erro de banco)
+        const { data: loteExistente } = await supabase
+            .from('Lote')
+            .select('id')
+            .eq('id', loteManual)
+            .maybeSingle() // Use maybeSingle para não dar erro se não achar
 
-        let idFinal = idBase
-        let contador = 1
-        let idDisponivel = false
-
-        while (!idDisponivel) {
-            const { data } = await supabase.from('Lote').select('id').eq('id', idFinal).single()
-            if (!data) idDisponivel = true
-            else {
-                contador++
-                idFinal = `${idBase}-${contador}`
-            }
+        if (loteExistente) {
+            alert(`ERRO: O Lote "${loteManual}" JÁ EXISTE no sistema.\nPor favor, adicione um sufixo (ex: ${loteManual}-B) ou verifique o número.`)
+            setLoading(false)
+            return
         }
 
         const previsao = new Date()
         previsao.setDate(previsao.getDate() + 10)
 
-        // 2. Criar Lote
+        // 4. Criar Lote (Usando o input manual como ID)
         const { error: errLote } = await supabase.from('Lote').insert({
-            id: idFinal,
+            id: loteManual, // <--- AQUI ENTRA O INPUT MANUAL
             produto: tipo,
             volume_litros: volumeTotalLitros,
             volume_atual: volumeTotalLitros,
@@ -130,16 +127,15 @@ export default function CalculadoraRaffinato() {
 
         if (errLote) throw errLote
 
-        // 3. Descontar Insumos (Se encontrados)
+        // 5. Descontar Insumos e Logs
         if (estoqueAcucar) {
             await supabase.from('Insumo')
                 .update({ quantidade_atual: saldoAcucar })
                 .eq('id', estoqueAcucar.id)
             
-            // Log do Açúcar
             await supabase.from('Logs').insert({
                 categoria: 'PRODUCAO', acao: 'CONSUMO',
-                descricao: `Consumo p/ Lote ${idFinal}: ${kgAcucarNecessarios.toFixed(2)}kg Açúcar`
+                descricao: `Lote ${loteManual}: -${kgAcucarNecessarios.toFixed(2)}kg Açúcar`
             })
         }
 
@@ -148,20 +144,18 @@ export default function CalculadoraRaffinato() {
                 .update({ quantidade_atual: saldoAlcool })
                 .eq('id', estoqueAlcool.id)
 
-            // Log do Álcool
             await supabase.from('Logs').insert({
                 categoria: 'PRODUCAO', acao: 'CONSUMO',
-                descricao: `Consumo p/ Lote ${idFinal}: ${volAlcoolNecessarioL.toFixed(2)}L Álcool`
+                descricao: `Lote ${loteManual}: -${volAlcoolNecessarioL.toFixed(2)}L Álcool`
             })
         }
         
-        // Log Geral
         await supabase.from('Logs').insert({
             categoria: 'PRODUCAO', acao: 'INICIO_LOTE',
-            descricao: `Iniciou Lote ${idFinal} (${volumeTotalLitros}L ${tipo})`
+            descricao: `Iniciou Lote ${loteManual} (${volumeTotalLitros}L ${tipo})`
         })
 
-        alert(`Lote ${idFinal} iniciado e estoques atualizados!`)
+        alert(`Lote ${loteManual} iniciado com sucesso!`)
         router.push('/lotes')
         
     } catch (error: any) {
@@ -171,7 +165,7 @@ export default function CalculadoraRaffinato() {
     }
   }
 
-  // Componente visual de linha de insumo
+  // Componente visual de linha
   const RowEstoque = ({ label, atual, necessario, saldo, unidade }: any) => (
     <div className="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
         <span className="font-bold text-gray-700">{label}</span>
@@ -197,54 +191,60 @@ export default function CalculadoraRaffinato() {
         {/* COLUNA ESQUERDA: INPUTS E ESTOQUE */}
         <div className="md:col-span-4 space-y-6">
             
-            {/* 1. INPUT */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Planejamento</label>
                 
+                {/* SELETOR DE PRODUTO */}
                 <div className="mb-6">
-                <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
-                <div className="flex gap-2">
-                    <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
-                    <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
-                </div>
+                    <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
+                    <div className="flex gap-2">
+                        <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
+                        <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
+                    </div>
                 </div>
 
-                <div>
-                <span className="block text-sm font-bold text-gray-700 mb-2">Volume Total (Litros)</span>
-                <div className="relative">
+                {/* NOVO: INPUT DE LOTE MANUAL */}
+                <div className="mb-6">
+                    <span className="block text-sm font-bold text-gray-700 mb-2">
+                        Nº do Lote (Data Compra)
+                    </span>
                     <input 
-                    type="text" 
-                    inputMode="decimal"
-                    placeholder='Ex: 50'
-                    value={litrosInput} 
-                    onChange={(e) => handleChange(e.target.value)} 
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" 
+                        type="text" 
+                        placeholder='Ex: 050126'
+                        value={loteManual}
+                        onChange={(e) => setLoteManual(e.target.value.toUpperCase())}
+                        className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-xl text-lg font-bold text-gray-900 outline-none transition-all placeholder:font-normal" 
                     />
+                    <p className="text-[10px] text-gray-400 mt-1 ml-1">
+                        Use a data da compra das frutas.
+                    </p>
                 </div>
+
+                {/* INPUT DE VOLUME */}
+                <div>
+                    <span className="block text-sm font-bold text-gray-700 mb-2">Volume Total (Litros)</span>
+                    <div className="relative">
+                        <input 
+                            type="text" 
+                            inputMode="decimal"
+                            placeholder='Ex: 50'
+                            value={litrosInput} 
+                            onChange={(e) => handleChangeLitros(e.target.value)} 
+                            className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" 
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* 2. DISPONIBILIDADE DE INSUMOS (NOVO) */}
+            {/* DISPONIBILIDADE */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     Disponibilidade
                 </h3>
                 {volumeTotalLitros > 0 ? (
                     <div className="space-y-1">
-                        <RowEstoque 
-                            label="Álcool Cereais" 
-                            atual={estoqueAlcool?.qtd || 0} 
-                            necessario={volAlcoolNecessarioL} 
-                            saldo={saldoAlcool} 
-                            unidade="L" 
-                        />
-                        <RowEstoque 
-                            label="Açúcar" 
-                            atual={estoqueAcucar?.qtd || 0} 
-                            necessario={kgAcucarNecessarios} 
-                            saldo={saldoAcucar} 
-                            unidade="kg" 
-                        />
+                        <RowEstoque label="Álcool Cereais" atual={estoqueAlcool?.qtd || 0} necessario={volAlcoolNecessarioL} saldo={saldoAlcool} unidade="L" />
+                        <RowEstoque label="Açúcar" atual={estoqueAcucar?.qtd || 0} necessario={kgAcucarNecessarios} saldo={saldoAcucar} unidade="kg" />
                         {!temInsumos && (
                              <div className="mt-3 text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded text-center uppercase tracking-wide">
                                 Estoque Insuficiente
@@ -255,30 +255,18 @@ export default function CalculadoraRaffinato() {
                     <p className="text-sm text-gray-400 italic">Digite o volume para calcular o estoque.</p>
                 )}
             </div>
-
-            {/* 3. INFO TÉCNICA (Antigo rodapé da esquerda) */}
-            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 space-y-4 h-fit hidden md:block">
-                <h3 className="text-blue-900 font-bold text-sm flex items-center gap-2">
-                    ℹ️ Memória de Cálculo
-                </h3>
-                <ul className="text-xs text-blue-800 space-y-3 opacity-90 leading-relaxed">
-                    <li><strong className="text-blue-900">Proporção:</strong> 29% Álcool / 71% Xarope.</li>
-                    <li className="border-t border-blue-200 pt-2"><strong className="text-blue-900">Física do Açúcar:</strong> 1kg ocupa 650ml.</li>
-                    <li className="border-t border-blue-200 pt-2"><strong className="text-blue-900">Diluição ({tipo}):</strong> 1kg açúcar para {tipo === 'limoncello' ? '2.25L' : '2.50L'} de água.</li>
-                </ul>
-            </div>
         </div>
 
-        {/* COLUNA DIREITA: RECEITA (Ocupa restante) */}
+        {/* COLUNA DIREITA: RECEITA */}
         <div className="md:col-span-8 bg-gray-900 text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col justify-between h-full min-h-[500px]">
             <div>
               <div className="flex justify-between items-center border-b border-gray-700 pb-4 mb-6">
                  <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ficha Técnica</h2>
-                 <span className="text-xs font-mono text-gray-500 capitalize">{tipo}</span>
+                 <span className="text-xs font-mono text-gray-500 capitalize">{loteManual ? `Lote: ${loteManual}` : 'Novo Lote'}</span>
               </div>
               
               <div className="space-y-8">
-                {/* ÁLCOOL */}
+                {/* ... (Visualização da receita mantida igual) ... */}
                 <div>
                   <p className="text-xs text-yellow-500 font-bold uppercase mb-2">1. Base Alcoólica (29%)</p>
                   <div className="flex justify-between items-end border-b border-gray-800 pb-2">
@@ -289,7 +277,6 @@ export default function CalculadoraRaffinato() {
                   </div>
                 </div>
 
-                {/* XAROPE */}
                 <div>
                   <p className="text-xs text-blue-400 font-bold uppercase mb-2">2. Preparo do Xarope (71%)</p>
                   <div className="space-y-4">
@@ -305,12 +292,6 @@ export default function CalculadoraRaffinato() {
                         {(totalAcucarGramas / 1000).toFixed(2)} <small className="text-sm text-gray-500">kg</small>
                       </span>
                     </div>
-                    <div className="flex justify-between items-end border-b border-gray-700 pb-2 bg-gray-800/50 p-2 rounded">
-                      <span className="text-gray-400 text-sm">Volume Xarope</span>
-                      <span className="text-xl font-mono font-bold text-gray-200">
-                        {(volXaropeNecessario / 1000).toFixed(2)} <small className="text-sm text-gray-500">L</small>
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -318,9 +299,9 @@ export default function CalculadoraRaffinato() {
 
             <div className="mt-8 pt-6 border-t border-gray-700">
                <div className="bg-gray-800 p-4 rounded-xl border border-green-900/50 flex justify-between items-center mb-4">
-                  <span className="text-xs text-gray-400 uppercase font-bold">Rendimento (750ml)</span>
+                  <span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado</span>
                   <span className="text-3xl font-mono font-black text-green-400">
-                      ± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-600">un</span>
+                      ± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-600">garrafas</span>
                   </span>
                </div>
                

@@ -11,24 +11,38 @@ interface Props {
 export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
   const [isVendaOpen, setIsVendaOpen] = useState(false)
 
-  // === CÁLCULOS ===
-  const getGarrafas = (tipo: string, tam: number) => {
-    const item = estoqueGarrafas?.find(e => e.tipo?.toLowerCase() === tipo && e.tamanho === tam)
-    return item?.quantidade || 0
+  // === CÁLCULOS CORRIGIDOS PARA USAR 'estoque_' ===
+  const calcularTotal = (tipo: string, tamanho: number) => {
+    // 1. Estoque Geral (Tabela Estoque)
+    const doEstoqueGeral = estoqueGarrafas?.find(
+      e => e.tipo?.toLowerCase() === tipo && e.tamanho === tamanho
+    )?.quantidade || 0
+
+    // 2. Estoque nos Lotes (Tabela Lote)
+    const dosLotes = lotes?.filter(
+      l => l.produto?.toLowerCase() === tipo
+    ).reduce((acc, l) => {
+      // CORREÇÃO: Usando as colunas de estoque dinâmico
+      const qtdLote = tamanho === 750 ? (l.estoque_750 || 0) : (l.estoque_375 || 0)
+      return acc + qtdLote
+    }, 0) || 0
+
+    return doEstoqueGeral + dosLotes
   }
 
   const stock = {
-    l750: getGarrafas('limoncello', 750),
-    l375: getGarrafas('limoncello', 375),
-    a750: getGarrafas('arancello', 750),
-    a375: getGarrafas('arancello', 375),
+    l750: calcularTotal('limoncello', 750),
+    l375: calcularTotal('limoncello', 375),
+    a750: calcularTotal('arancello', 750),
+    a375: calcularTotal('arancello', 375),
   }
 
   const tanques = {
-    limoncello: lotes?.filter(l => l.produto === 'limoncello').reduce((acc, l) => acc + l.volume_atual, 0) || 0,
-    arancello: lotes?.filter(l => l.produto === 'arancello').reduce((acc, l) => acc + l.volume_atual, 0) || 0
+    limoncello: lotes?.filter(l => l.produto === 'limoncello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0,
+    arancello: lotes?.filter(l => l.produto === 'arancello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0
   }
 
+  // ... (Restante do return mantém igual, apenas a lógica acima mudou)
   return (
     <div className="p-8 max-w-6xl mx-auto">
       
@@ -37,7 +51,6 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Dashboard & Estoque</h1>
         </div>
         <div className="flex gap-3">
-          {/* Botões... */}
           <button 
             onClick={() => setIsVendaOpen(true)}
             className="bg-green-600 cursor-pointer text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"
@@ -51,7 +64,7 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
         </div>
       </header>
 
-      {/* === SEÇÃO 1: TANQUES (LITROS) === */}
+      {/* SEÇÃO 1: TANQUES */}
       <section className="mb-12">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -99,7 +112,7 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
         </div>
       </section>
 
-      {/* === SEÇÃO 2: PRATELEIRA (GARRAFAS) === */}
+      {/* SEÇÃO 2: PRATELEIRA */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -108,15 +121,13 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* Card Limoncello */}
+          {/* Limoncello */}
           <div className="bg-yellow-50 p-8 rounded-3xl border border-yellow-100 relative overflow-hidden">
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-yellow-200 rounded-full opacity-50 blur-2xl"></div>
-            
             <div className="relative z-10">
               <h3 className="text-xl font-black text-yellow-900 mb-6 flex items-center gap-2">
                 🍋 Limoncello
               </h3>
-              
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/80 p-4 rounded-2xl backdrop-blur-sm">
                   <span className="block text-xs font-bold text-yellow-600 uppercase mb-1">Garrafa 750ml</span>
@@ -132,15 +143,13 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
             </div>
           </div>
 
-          {/* Card Arancello */}
+          {/* Arancello */}
           <div className="bg-orange-50 p-8 rounded-3xl border border-orange-100 relative overflow-hidden">
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-orange-200 rounded-full opacity-50 blur-2xl"></div>
-            
             <div className="relative z-10">
               <h3 className="text-xl font-black text-orange-900 mb-6 flex items-center gap-2">
                 🍊 Arancello
               </h3>
-              
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/80 p-4 rounded-2xl backdrop-blur-sm">
                   <span className="block text-xs font-bold text-orange-600 uppercase mb-1">Garrafa 750ml</span>
@@ -159,9 +168,7 @@ export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
         </div>
       </section>
 
-      {/* O Modal de Venda fica aqui, controlado pelo botão */}
       <ModalVenda isOpen={isVendaOpen} onClose={() => setIsVendaOpen(false)} />
-
     </div>
   )
 }
