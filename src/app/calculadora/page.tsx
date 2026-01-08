@@ -9,9 +9,7 @@ export default function CalculadoraRaffinato() {
   const [loading, setLoading] = useState(false)
   
   // === NOVOS ESTADOS ===
-  // Input manual do Lote (String livre)
   const [loteManual, setLoteManual] = useState<string>('')
-  
   const [litrosInput, setLitrosInput] = useState<string>('')
   const [tipo, setTipo] = useState<'limoncello' | 'arancello'>('limoncello')
 
@@ -19,7 +17,6 @@ export default function CalculadoraRaffinato() {
   const [estoqueAcucar, setEstoqueAcucar] = useState<{id: string, qtd: number} | null>(null)
   const [estoqueAlcool, setEstoqueAlcool] = useState<{id: string, qtd: number} | null>(null)
 
-  // Busca insumos ao carregar
   useEffect(() => {
     fetchEstoques()
   }, [])
@@ -41,26 +38,30 @@ export default function CalculadoraRaffinato() {
     }
   }
 
-  // === CONSTANTES ===
-  const RAZAO_ALCOOL = RECEITA.RAZAO_ALCOOL 
-  const RAZAO_XAROPE = RECEITA.RAZAO_XAROPE 
-
-  // Tratamento do Input
+  // === CONSTANTES & CÁLCULOS ===
+  
+  // 1. Definição das Variáveis baseadas no Input
   const volumeTotalLitros = Number(litrosInput.replace(',', '.')) || 0
   const volumeTotalMl = volumeTotalLitros * 1000
 
-  // === CÁLCULOS ===
-  const volAlcoolNecessarioMl = volumeTotalMl * RAZAO_ALCOOL
+  // 2. Cálculo do Álcool (29,17%)
+  const volAlcoolNecessarioMl = volumeTotalMl * RECEITA.RAZAO_ALCOOL
   const volAlcoolNecessarioL = volAlcoolNecessarioMl / 1000
-  const volXaropeNecessario = volumeTotalMl * RAZAO_XAROPE
 
-  const volOcupadoPor1KgAcucar = RECEITA.VOLUME_ACUCAR_POR_KG 
-  const qtdAguaPorKgAcucar = tipo === 'limoncello' ? RECEITA.AGUA_POR_KG_LIMONCELLO : RECEITA.AGUA_POR_KG_ARANCELLO
-  const rendimentoXaropePorReceita = volOcupadoPor1KgAcucar + qtdAguaPorKgAcucar
+  // 3. Cálculo do Xarope (70,83%)
+  const volXaropeNecessarioMl = volumeTotalMl * RECEITA.RAZAO_XAROPE
 
-  const kgAcucarNecessarios = volXaropeNecessario / rendimentoXaropePorReceita
-  const totalAcucarGramas = kgAcucarNecessarios * 1000
-  const totalAguaMl = kgAcucarNecessarios * qtdAguaPorKgAcucar
+  // 4. Decomposição do Xarope (Açúcar e Água)
+  const fatorXarope = tipo === 'limoncello' ? RECEITA.FATOR_XAROPE_LIMONCELLO : RECEITA.FATOR_XAROPE_ARANCELLO
+  const fatorAgua = tipo === 'limoncello' ? RECEITA.AGUA_POR_G_ACUCAR_LIMONCELLO : RECEITA.AGUA_POR_G_ACUCAR_ARANCELLO
+
+  const totalAcucarGramas = volXaropeNecessarioMl / fatorXarope
+  const kgAcucarNecessarios = totalAcucarGramas / 1000
+
+  // Água = Açúcar(g) * FatorAgua (2.25 ou 2.50)
+  const totalAguaMl = totalAcucarGramas * fatorAgua
+
+  // Estimativa de Garrafas
   const garrafasEstimadas = volumeTotalLitros / 0.75
 
   // === PREVISÃO DE ESTOQUE ===
@@ -76,7 +77,6 @@ export default function CalculadoraRaffinato() {
 
   // === AÇÃO: SALVAR LOTE ===
   const handleSalvarLote = async () => {
-    // 1. Validações Básicas
     if (!loteManual.trim()) {
         alert("Por favor, digite o NÚMERO DO LOTE (ex: data da compra da fruta).")
         return
@@ -86,9 +86,8 @@ export default function CalculadoraRaffinato() {
       return
     }
 
-    // 2. Validação de Estoque
     if (!temInsumos) {
-        const confirmar = window.confirm("⚠️ ATENÇÃO: Seu estoque consta como INSUFICIENTE. Deseja continuar mesmo assim e negativar o estoque?")
+        const confirmar = window.confirm("️ ATENÇÃO: Seu estoque consta como INSUFICIENTE. Deseja continuar mesmo assim e negativar o estoque?")
         if (!confirmar) return
     } else {
         if (!window.confirm(`Iniciar lote "${loteManual}" com ${volumeTotalLitros}L de ${tipo}?`)) return
@@ -97,12 +96,11 @@ export default function CalculadoraRaffinato() {
     setLoading(true)
 
     try {
-        // 3. Verificar se o ID já existe (Para evitar erro de banco)
         const { data: loteExistente } = await supabase
             .from('Lote')
             .select('id')
             .eq('id', loteManual)
-            .maybeSingle() // Use maybeSingle para não dar erro se não achar
+            .maybeSingle()
 
         if (loteExistente) {
             alert(`ERRO: O Lote "${loteManual}" JÁ EXISTE no sistema.\nPor favor, adicione um sufixo (ex: ${loteManual}-B) ou verifique o número.`)
@@ -113,9 +111,8 @@ export default function CalculadoraRaffinato() {
         const previsao = new Date()
         previsao.setDate(previsao.getDate() + 10)
 
-        // 4. Criar Lote (Usando o input manual como ID)
         const { error: errLote } = await supabase.from('Lote').insert({
-            id: loteManual, // <--- AQUI ENTRA O INPUT MANUAL
+            id: loteManual,
             produto: tipo,
             volume_litros: volumeTotalLitros,
             volume_atual: volumeTotalLitros,
@@ -128,7 +125,6 @@ export default function CalculadoraRaffinato() {
 
         if (errLote) throw errLote
 
-        // 5. Descontar Insumos e Logs
         if (estoqueAcucar) {
             await supabase.from('Insumo')
                 .update({ quantidade_atual: saldoAcucar })
@@ -166,7 +162,6 @@ export default function CalculadoraRaffinato() {
     }
   }
 
-  // Componente visual de linha
   const RowEstoque = ({ label, atual, necessario, saldo, unidade }: any) => (
     <div className="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
         <span className="font-bold text-gray-700">{label}</span>
@@ -195,16 +190,21 @@ export default function CalculadoraRaffinato() {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Planejamento</label>
                 
-                {/* SELETOR DE PRODUTO */}
                 <div className="mb-6">
                     <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
                     <div className="flex gap-2">
                         <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
                         <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
                     </div>
+                    
+                    {/* NOVO: PAINEL INFORMATIVO BREVE */}
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-900 space-y-3 shadow-sm">
+                        <div className="border-blue-200 text-[10px] text-blue-500 font-bold text-center uppercase tracking-wider">
+                            29,17% Álcool • 70,83% Xarope
+                        </div>
+                    </div>
                 </div>
 
-                {/* NOVO: INPUT DE LOTE MANUAL */}
                 <div className="mb-6">
                     <span className="block text-sm font-bold text-gray-700 mb-2">
                         Nº do Lote (Data Compra)
@@ -221,7 +221,6 @@ export default function CalculadoraRaffinato() {
                     </p>
                 </div>
 
-                {/* INPUT DE VOLUME */}
                 <div>
                     <span className="block text-sm font-bold text-gray-700 mb-2">Volume Total (Litros)</span>
                     <div className="relative">
@@ -237,7 +236,6 @@ export default function CalculadoraRaffinato() {
                 </div>
             </div>
 
-            {/* DISPONIBILIDADE */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     Disponibilidade
@@ -267,9 +265,9 @@ export default function CalculadoraRaffinato() {
               </div>
               
               <div className="space-y-8">
-                {/* ... (Visualização da receita mantida igual) ... */}
+                {/* ÁLCOOL */}
                 <div>
-                  <p className="text-xs text-yellow-500 font-bold uppercase mb-2">1. Base Alcoólica (29%)</p>
+                  <p className="text-xs text-yellow-500 font-bold uppercase mb-2">1. Base Alcoólica ({(RECEITA.RAZAO_ALCOOL * 100).toFixed(2)}%)</p>
                   <div className="flex justify-between items-end border-b border-gray-800 pb-2">
                     <span className="text-gray-300">Álcool de Cereais</span>
                     <span className="text-3xl font-mono font-bold text-yellow-400">
@@ -278,9 +276,12 @@ export default function CalculadoraRaffinato() {
                   </div>
                 </div>
 
+                {/* XAROPE */}
                 <div>
-                  <p className="text-xs text-blue-400 font-bold uppercase mb-2">2. Preparo do Xarope (71%)</p>
+                  <p className="text-xs text-blue-400 font-bold uppercase mb-2">2. Preparo do Xarope ({(RECEITA.RAZAO_XAROPE * 100).toFixed(2)}%)</p>
                   <div className="space-y-4">
+                    {/* NOVO: VOLTOU O VALOR TOTAL DO XAROPE */}
+
                     <div className="flex justify-between items-end border-b border-gray-800 pb-2">
                       <span className="text-gray-300">Água Filtrada</span>
                       <span className="text-3xl font-mono font-bold text-blue-400">
@@ -290,8 +291,14 @@ export default function CalculadoraRaffinato() {
                     <div className="flex justify-between items-end border-b border-gray-800 pb-2">
                       <span className="text-gray-300">Açúcar Refinado</span>
                       <span className="text-3xl font-mono font-bold text-white">
-                        {(totalAcucarGramas / 1000).toFixed(2)} <small className="text-sm text-gray-500">kg</small>
+                        {kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-500">kg</small>
                       </span>
+                    </div>
+                    <div className="flex justify-between items-end border-b border-gray-800 pb-2 bg-blue-900/20 px-2 rounded">
+                        <span className="text-blue-200">Volume de Calda/Xarope</span>
+                        <span className="text-xl font-mono font-bold text-blue-200">
+                            {(volXaropeNecessarioMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small>
+                        </span>
                     </div>
                   </div>
                 </div>

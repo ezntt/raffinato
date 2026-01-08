@@ -1,13 +1,24 @@
-// Regras da Receita (Matemática)
+// src/lib/constants.ts
+
+// 🍋 Regras da Receita (Matemática Ajustada)
 export const RECEITA = {
-    RAZAO_ALCOOL: 1400 / 4800,      // Proporção de Álcool na base
-    RAZAO_XAROPE: 3400 / 4800,      // Proporção de Xarope na base
-    VOLUME_ACUCAR_POR_KG: 650,      // 1kg de açúcar ocupa 650ml de volume
-    AGUA_POR_KG_LIMONCELLO: 2250,   // Ml de água por Kg de açúcar
-    AGUA_POR_KG_ARANCELLO: 2500,    // Ml de água por Kg de açúcar
+    // Porcentagens: 29,17% Álcool e 70,83% Xarope
+    RAZAO_ALCOOL: 29.17 / 100,      
+    RAZAO_XAROPE: 70.83 / 100,      
+
+    // Limoncello
+    // 1kg Açúcar (0.65L) + 2.25L Água = 2.90L Volume Final
+    FATOR_XAROPE_LIMONCELLO: 2.90, 
+    AGUA_POR_G_ACUCAR_LIMONCELLO: 2.25,
+
+    // Arancello
+    // 1kg Açúcar (0.65L) + 2.50L Água = 3.15L Volume Final
+    // (Ajustado para 3.15 para compensar corretamente a diferença de água)
+    FATOR_XAROPE_ARANCELLO: 3.15,
+    AGUA_POR_G_ACUCAR_ARANCELLO: 2.50,
 }
 
-// Nomes Exatos dos Insumos (Para bater com o Banco de Dados)
+// 📦 Nomes Exatos dos Insumos
 export const NOME_INSUMO = {
     GARRAFA_750: 'Garrafa Vidro 750ml',
     GARRAFA_375: 'Garrafa Vidro 375ml',
@@ -21,7 +32,7 @@ export const NOME_INSUMO = {
     ACUCAR: 'Açúcar Refinado'
 }
 
-// Valores Padrão (Fallback caso o banco falhe)
+// 💰 Valores Padrão
 export const PRECO_PADRAO = {
     GARRAFA_750: 180.00,
     GARRAFA_375: 100.00
