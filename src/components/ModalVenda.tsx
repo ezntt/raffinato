@@ -111,9 +111,17 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
   const validarItem = (nomeProd: string, tam: number, qtdInput: number | string, loteId: string) => {
     const qtd = Number(qtdInput) || 0
-    if (qtd <= 0 || !loteId) return true 
+    // Se tem quantidade mas não tem lote -> ERRO
+    if (qtd > 0 && !loteId) {
+        alert(`Selecione o LOTE de origem para ${nomeProd}`)
+        return false
+    }
+    // Se não tem quantidade -> Ignora
+    if (qtd <= 0) return true 
+
     const lote = lotesDisponiveis.find(l => l.id === loteId)
     if (!lote) return true
+    
     const estoqueDisponivel = tam === 750 ? lote.estoque_750 : lote.estoque_375
     if (qtd > estoqueDisponivel) {
         alert(`ERRO: Lote ${loteId} de ${nomeProd} só tem ${estoqueDisponivel} unidades.`)
@@ -128,6 +136,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     if (!validarItem('Limoncello 375ml', 375, qtdL375, loteL375)) return
     if (!validarItem('Arancello 750ml', 750, qtdA750, loteA750)) return
     if (!validarItem('Arancello 375ml', 375, qtdA375, loteA375)) return
+    
+    // Verifica se tem pelo menos 1 item
+    if (!qtdL750 && !qtdL375 && !qtdA750 && !qtdA375) return alert("Adicione pelo menos 1 item")
+
     setLoading(true)
 
     try {
@@ -149,8 +161,11 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       const processarItem = async (prod: string, tam: number, qtdStr: string | number, preco: number, loteId: string) => {
         const qtd = Number(qtdStr) || 0
         if (qtd <= 0) return
+        
         await supabase.from('itens_venda').insert({ venda_id: venda.id, produto: prod, tamanho: tam, quantidade: qtd, preco_unitario: preco, lote_id: loteId || null })
-        await supabase.rpc('incrementar_estoque', { p_tipo: prod, p_tamanho: tam, p_qtd: -qtd })
+        
+        // REMOVIDO: incrementar_estoque (Legado)
+        // AGORA SÓ BAIXA DO LOTE:
         if (loteId) {
             const coluna = tam === 750 ? 'estoque_750' : 'estoque_375'
             await supabase.rpc('baixar_estoque_lote', { p_lote_id: loteId, p_coluna: coluna, p_qtd: qtd })
@@ -181,7 +196,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     const ops = getOpcoesLote(prod, tam)
     return (
       <select value={val} onChange={e => setVal(e.target.value)} className="text-[10px] bg-white border border-gray-200 rounded p-1 w-full mt-1 outline-none focus:border-black text-gray-900 cursor-pointer">
-        <option value="">-- Estoque Antigo / Misto --</option>
+        <option value="">-- Selecione Lote --</option>
         {ops.map(l => <option key={l.id} value={l.id}>Lote {l.id} (Disp: {tam === 750 ? l.estoque_750 : l.estoque_375})</option>)}
       </select>
     )
