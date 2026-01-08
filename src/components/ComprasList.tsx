@@ -55,11 +55,11 @@ export function ComprasList({ compras }: { compras: any[] }) {
                         {/* Badges de Data e Fornecedor */}
                         <div className="flex flex-wrap gap-2 text-xs font-bold uppercase mt-1">
                             <span className="text-gray-400 flex items-center gap-1">
-                                📅 {new Date(item.data_movimento).toLocaleDateString('pt-BR')}
+                                {new Date(item.data_movimento).toLocaleDateString('pt-BR')}
                             </span>
                             {item.fornecedor && (
                                 <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">
-                                    🏭 {item.fornecedor}
+                                    {item.fornecedor}
                                 </span>
                             )}
                             {item.codigo_compra && (
@@ -86,7 +86,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
             {/* SEÇÃO DE OBSERVAÇÃO (Só aparece se existir texto) */}
             {item.observacao && (
                 <div className="mt-4 pt-3 border-t border-gray-50">
-                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">📝 Observação:</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Observação:</p>
                     <p className="text-sm text-gray-600 italic bg-gray-50 p-3 rounded-lg border border-gray-100">
                         "{item.observacao}"
                     </p>

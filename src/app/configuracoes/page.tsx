@@ -95,7 +95,7 @@ export default function ConfiguracoesPage() {
         {/* DADOS JURÍDICOS */}
         <section className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                🏢 Dados Jurídicos
+                Dados Jurídicos
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
@@ -124,7 +124,7 @@ export default function ConfiguracoesPage() {
         {/* ENDEREÇO */}
         <section className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                📍 Endereço da Sede
+                Endereço da Sede
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>

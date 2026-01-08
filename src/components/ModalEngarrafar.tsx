@@ -154,7 +154,7 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
             </span>
         </div>
 
-        <h2 className="text-2xl font-black text-gray-900 mb-1 text-center">Engarrafar Lote 🍾</h2>
+        <h2 className="text-2xl font-black text-gray-900 mb-1 text-center">Engarrafar Lote </h2>
         <p className="text-sm text-gray-500 mb-6 text-center">Lote: <span className="font-mono font-bold text-black">{lote.id}</span></p>
 
         <form onSubmit={handleConfirm} className="space-y-5">

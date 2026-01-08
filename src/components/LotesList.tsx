@@ -80,7 +80,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
               <button 
                 onClick={(e) => { e.stopPropagation(); excluirLote(lote.id) }}
                 disabled={deletingId === lote.id}
-                className="absolute top-4 right-4 text-gray-300 hover:text-red-600 font-bold text-xs p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                className="absolute cursor-pointer top-4 right-4 text-gray-300 hover:text-red-600 font-bold text-xs p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                 title="Excluir Lote e Reverter Insumos"
               >
                 {deletingId === lote.id ? '⏳' : '🗑️'}
@@ -115,6 +115,9 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                 
                 <p className="text-xs text-gray-400 mt-1 flex gap-2">
                   <span>Início: {new Date(lote.data_inicio).toLocaleDateString('pt-BR')}</span>
+                  {/* Mantive a previsão visualmente apenas como referência, se quiser */}
+                  <span>•</span>
+                  <span>Ref: {previsao.toLocaleDateString('pt-BR')}</span>
                 </p>
               </div>
 
@@ -127,7 +130,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                     onClick={() => abrirEngarrafar(lote)}
                     className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 w-full"
                   >
-                    <span>🍾 Engarrafar</span>
+                    <span>Engarrafar</span>
                   </button>
                 ) : (
                   // Se NÃO está pronto -> Mostra APROVAR (Sempre disponível)

@@ -108,13 +108,13 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                 onClick={() => setActiveTab('estoque')}
                 className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
             >
-                📦 Estoque Atual
+                Estoque Atual
             </button>
             <button 
                 onClick={() => setActiveTab('historico')}
                 className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}
             >
-                📜 Histórico Compras
+                Histórico Compras
             </button>
         </div>
 
@@ -129,13 +129,13 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
       {activeTab === 'estoque' ? (
           <div className="space-y-8 animate-in fade-in duration-300">
             <section>
-                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">🍋 Ingredientes</h2>
+                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">Ingredientes</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {ingredientes.map(item => <CardInsumo key={item.id} item={item} />)}
                 </div>
             </section>
             <section>
-                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">📦 Embalagens</h2>
+                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">Embalagens</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {embalagens.map(item => <CardInsumo key={item.id} item={item} />)}
                 </div>
@@ -149,7 +149,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-black text-gray-900">Registrar Compra 🛒</h2>
+                    <h2 className="text-2xl font-black text-gray-900">Registrar Compra </h2>
                     <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
                 </div>
 

@@ -4,20 +4,30 @@ import Link from 'next/link'
 import { ModalVenda } from '@/components/ModalVenda'
 
 interface Props {
+  estoqueGarrafas: any[]
   lotes: any[]
 }
 
-export function DashboardClient({ lotes }: Props) {
+export function DashboardClient({ estoqueGarrafas, lotes }: Props) {
   const [isVendaOpen, setIsVendaOpen] = useState(false)
 
-  // === CÁLCULO 100% BASEADO EM LOTES ===
+  // === CÁLCULOS CORRIGIDOS PARA USAR 'estoque_' ===
   const calcularTotal = (tipo: string, tamanho: number) => {
-    return lotes?.filter(
+    // 1. Estoque Geral (Tabela Estoque)
+    const doEstoqueGeral = estoqueGarrafas?.find(
+      e => e.tipo?.toLowerCase() === tipo && e.tamanho === tamanho
+    )?.quantidade || 0
+
+    // 2. Estoque nos Lotes (Tabela Lote)
+    const dosLotes = lotes?.filter(
       l => l.produto?.toLowerCase() === tipo
     ).reduce((acc, l) => {
+      // CORREÇÃO: Usando as colunas de estoque dinâmico
       const qtdLote = tamanho === 750 ? (l.estoque_750 || 0) : (l.estoque_375 || 0)
       return acc + qtdLote
     }, 0) || 0
+
+    return doEstoqueGeral + dosLotes
   }
 
   const stock = {
@@ -32,6 +42,7 @@ export function DashboardClient({ lotes }: Props) {
     arancello: lotes?.filter(l => l.produto === 'arancello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0
   }
 
+  // ... (Restante do return mantém igual, apenas a lógica acima mudou)
   return (
     <div className="p-8 max-w-6xl mx-auto">
       
@@ -105,7 +116,7 @@ export function DashboardClient({ lotes }: Props) {
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          Pronta Entrega (Garrafas em Lotes)
+          Pronta Entrega (Garrafas)
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

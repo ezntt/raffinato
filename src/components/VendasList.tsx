@@ -95,7 +95,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
                 onClick={(e) => { e.stopPropagation(); togglePagamento(venda.id, venda.pago) }}
                 className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl text-xs font-bold uppercase border transition-all ${venda.pago ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
               >
-                {venda.pago ? <>✓ Pago</> : <>⏳ Marcar Pago</>}
+                {venda.pago ? <>✓ Pago</> : <>Marcar Pago</>}
               </button>
             </div>
 
