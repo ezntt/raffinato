@@ -57,7 +57,7 @@ export default async function DetalhesVendaPage(props: Props) {
             <h2 className="text-lg font-black text-gray-900">{venda.Cliente?.nome || 'Não informado'}</h2>
             <p className="text-gray-500 text-sm font-medium">{venda.Cliente?.telefone || '-'}</p>
             <span className="text-[10px] font-bold uppercase text-gray-400 bg-gray-100 px-2 py-1 rounded mt-2 inline-block">
-              {venda.Cliente?.tipo || 'Consumidor'}
+              {venda.Cliente?.tipo || 'consumidor'}
             </span>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { RECEITA } from '@/lib/constants'
 
-export default function CalculadoraRaffinato() {
+export default function ProducaoPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   
@@ -151,7 +151,7 @@ export default function CalculadoraRaffinato() {
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
-      <header className="mb-8"><h1 className="text-3xl font-black text-gray-900 tracking-tight">Calculadora</h1></header>
+      <header className="mb-8"><h1 className="text-3xl font-black text-gray-900 tracking-tight">Produção</h1></header>
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         <div className="md:col-span-4 space-y-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">

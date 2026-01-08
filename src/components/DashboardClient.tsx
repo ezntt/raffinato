@@ -48,7 +48,7 @@ export function DashboardClient({ lotes }: Props) {
             <span>$ Nova Venda</span>
           </button>
 
-          <Link href="/calculadora" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2">
+          <Link href="/producao" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2">
             <span>+ Novo Lote</span>
           </Link>
         </div>

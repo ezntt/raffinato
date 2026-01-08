@@ -9,7 +9,7 @@ export function DashboardActions() {
     <>
       <div className="mt-12 grid grid-cols-2 gap-4">
         <a 
-          href="/calculadora" 
+          href="/producao" 
           className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-4 rounded-xl font-bold text-center transition flex items-center justify-center gap-2"
         >
           <span>+ Produzir Novo Lote</span>
