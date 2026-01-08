@@ -28,7 +28,7 @@ export const NOME_INSUMO = {
     ROTULO_LIMONCELLO_375: 'Rótulo Limoncello 375ml',
     ROTULO_ARANCELLO_750: 'Rótulo Arancello 750ml',
     ROTULO_ARANCELLO_375: 'Rótulo Arancello 375ml',
-    ALCOOL: 'Álcool de Cereais',
+    ALCOOL: 'Álcool Branco',
     ACUCAR: 'Açúcar Refinado'
 }
 

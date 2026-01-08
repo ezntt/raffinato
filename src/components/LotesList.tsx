@@ -1,3 +1,5 @@
+// src/components/LotesList.tsx
+
 "use client"
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -16,9 +18,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
     setIsModalOpen(true)
   }
 
-  // Função para mudar o status de 'em_infusao' para 'pronto'
   const liberarLote = async (id: string) => {
-    // Confirmação simples
     if (!window.confirm("Deseja aprovar este lote para engarrafamento?")) return
 
     setLoadingId(id)
@@ -38,7 +38,6 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
     }
   }
 
-  // Função de Excluir Lote (Mantida)
   const excluirLote = async (id: string) => {
     const confirmacao = window.confirm(
         `⛔ PERIGO: Deseja EXCLUIR o lote ${id}?\n\n` +
@@ -72,11 +71,19 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
         {initialLotes.map((lote) => {
           const previsao = new Date(lote.data_previsao)
           const isPronto = lote.status === 'pronto'
+          
+          // Lógica para mostrar datas
+          const historico = lote.historico_producao || []
+          const temMultiplasDatas = historico.length > 1
+          
+          // Se tiver histórico novo, pega a primeira entrada como início real, senão usa data_inicio
+          const dataInicialReal = historico.length > 0 
+            ? new Date(historico[0].data).toLocaleDateString('pt-BR') 
+            : new Date(lote.data_inicio).toLocaleDateString('pt-BR')
 
           return (
             <div key={lote.id} className="relative bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group">
               
-              {/* BOTÃO EXCLUIR (Discreto no topo direito) */}
               <button 
                 onClick={(e) => { e.stopPropagation(); excluirLote(lote.id) }}
                 disabled={deletingId === lote.id}
@@ -96,7 +103,6 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                     {lote.produto}
                   </span>
                   
-                  {/* Badge de Status Simplificado */}
                   {isPronto ? (
                     <span className="text-[10px] font-bold uppercase bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">
                       ✓ Aprovado
@@ -113,19 +119,29 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                   <span className="text-xs text-gray-400 font-bold uppercase">Restantes no Tanque</span>
                 </div>
                 
-                <p className="text-xs text-gray-400 mt-1 flex gap-2">
-                  <span>Início: {new Date(lote.data_inicio).toLocaleDateString('pt-BR')}</span>
-                  {/* Mantive a previsão visualmente apenas como referência, se quiser */}
-                  <span>•</span>
-                  <span>Ref: {previsao.toLocaleDateString('pt-BR')}</span>
-                </p>
+                <div className="mt-2 space-y-1">
+                    <p className="text-xs text-gray-400 flex gap-2">
+                        <span>Início: {dataInicialReal}</span>
+                        <span>•</span>
+                        <span>Previsão: {previsao.toLocaleDateString('pt-BR')}</span>
+                    </p>
+                    
+                    {/* Exibe detalhe das produções se houver múltiplas */}
+                    {temMultiplasDatas && (
+                        <div className="flex gap-2 flex-wrap mt-1">
+                            {historico.map((h: any, idx: number) => (
+                                <span key={idx} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200" title={`Entrada: ${h.volume}L`}>
+                                    +{h.volume}L em {new Date(h.data).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
               </div>
 
-              {/* === BOTÕES DE AÇÃO (Sem travas de data) === */}
+              {/* Botões de Ação */}
               <div className="w-full md:w-auto">
-                
                 {isPronto ? (
-                  // Se já está pronto -> Mostra ENGARRAFAR
                   <button
                     onClick={() => abrirEngarrafar(lote)}
                     className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 w-full"
@@ -133,7 +149,6 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                     <span>Engarrafar</span>
                   </button>
                 ) : (
-                  // Se NÃO está pronto -> Mostra APROVAR (Sempre disponível)
                   <button
                     onClick={() => liberarLote(lote.id)}
                     disabled={loadingId === lote.id}
@@ -142,7 +157,6 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                     {loadingId === lote.id ? 'Salvando...' : '✅ Aprovar Lote'}
                   </button>
                 )}
-
               </div>
 
             </div>
