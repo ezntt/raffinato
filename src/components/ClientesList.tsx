@@ -10,17 +10,18 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   // Controle do Modal
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [modoEdicao, setModoEdicao] = useState(false) // false = Criar, true = Editar
+  const [modoEdicao, setModoEdicao] = useState(false) 
   const [idEdicao, setIdEdicao] = useState<string | null>(null)
 
   // === CAMPOS DO FORMULÁRIO ===
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [tipo, setTipo] = useState('consumidor')
+  // ALTERAÇÃO 1: Default PF
+  const [tipo, setTipo] = useState('PF') 
   const [email, setEmail] = useState('')
   const [cpfCnpj, setCpfCnpj] = useState('')
   
-  // Endereço
+  // Endereço (MANTIDO)
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState('')
   const [numero, setNumero] = useState('')
@@ -38,20 +39,22 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     return v ? v.replace(/^(\d*)/, "($1") : ""
   }
 
-  const maskCpfCnpj = (v: string) => {
-    v = v.replace(/\D/g, "")
-    if (v.length <= 11) { // CPF
-        return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-    } else { // CNPJ
-        return v.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
-    }
+  // ALTERAÇÃO 2: Máscara dinâmica baseada no tipo
+  const handleDocChange = (v: string) => {
+      const limpo = v.replace(/\D/g, "")
+      if (tipo === 'PF') {
+          // CPF
+          setCpfCnpj(limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4").substring(0, 14))
+      } else {
+          // CNPJ
+          setCpfCnpj(limpo.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5"))
+      }
   }
 
   const maskCep = (v: string) => {
     return v.replace(/\D/g, "").substring(0, 8).replace(/^(\d{5})(\d{3})/, "$1-$2")
   }
 
-  // === VIA CEP ===
   const buscarCep = async (cepInput: string) => {
     const cepLimpo = cepInput.replace(/\D/g, '')
     if (cepLimpo.length === 8) {
@@ -71,7 +74,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     }
   }
 
-  // === ABRIR MODAL ===
   const abrirNovo = () => {
     setModoEdicao(false)
     setIdEdicao(null)
@@ -82,7 +84,8 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const abrirEditar = (c: any) => {
     setModoEdicao(true)
     setIdEdicao(c.id)
-    setNome(c.nome); setTelefone(c.telefone || ''); setTipo(c.tipo || 'consumidor')
+    // ALTERAÇÃO 3: Normaliza tipo
+    setNome(c.nome); setTelefone(c.telefone || ''); setTipo(c.tipo || 'PF')
     setEmail(c.email || ''); setCpfCnpj(c.cpf_cnpj || '')
     setCep(c.cep || ''); setEndereco(c.endereco || ''); setNumero(c.numero || '')
     setBairro(c.bairro || ''); setCidade(c.cidade || ''); setEstado(c.estado || '')
@@ -91,11 +94,10 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   }
 
   const limparForm = () => {
-    setNome(''); setTelefone(''); setTipo('consumidor'); setEmail(''); setCpfCnpj('')
+    setNome(''); setTelefone(''); setTipo('PF'); setEmail(''); setCpfCnpj('')
     setCep(''); setEndereco(''); setNumero(''); setBairro(''); setCidade('Florianópolis'); setEstado('SC'); setComplemento('')
   }
 
-  // === SALVAR ===
   const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -137,7 +139,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         </button>
       </div>
 
-      {/* === VERSÃO DESKTOP (TABELA) - Escondida no Mobile (hidden md:block) === */}
+      {/* VERSÃO DESKTOP */}
       <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -154,11 +156,10 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                   <tr key={cliente.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="p-4">
                         <span className="block font-bold text-gray-900">{cliente.nome}</span>
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block ${
-                            cliente.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' :
-                            cliente.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-500'
-                        }`}>{cliente.tipo}</span>
+                        {/* ALTERAÇÃO 4: Badge simples PF/PJ */}
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block bg-gray-100 text-gray-500">
+                            {cliente.tipo}
+                        </span>
                     </td>
                     <td className="p-4 text-sm text-gray-600">
                         <div className="font-mono">{cliente.telefone || '-'}</div>
@@ -170,10 +171,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                         {cliente.bairro && <div className="text-xs text-gray-400">{cliente.bairro} - {cliente.cidade}</div>}
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                          onClick={() => abrirEditar(cliente)} 
-                          className="text-blue-600 cursor-pointer hover:bg-blue-50 px-3 py-2 rounded-lg font-bold text-sm transition-colors"
-                      >
+                      <button onClick={() => abrirEditar(cliente)} className="text-blue-600 cursor-pointer hover:bg-blue-50 px-3 py-2 rounded-lg font-bold text-sm transition-colors">
                           Editar ✏️
                       </button>
                     </td>
@@ -184,45 +182,22 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         </div>
       </div>
 
-      {/* === VERSÃO MOBILE (CARDS) - Escondida no Desktop (md:hidden) === */}
+      {/* VERSÃO MOBILE */}
       <div className="md:hidden space-y-4">
         {clientes.map((cliente) => (
             <div key={cliente.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
                 <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-bold text-gray-900 text-lg">{cliente.nome}</h3>
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block ${
-                            cliente.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' :
-                            cliente.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-500'
-                        }`}>{cliente.tipo}</span>
+                        {/* ALTERAÇÃO 4: Badge simples */}
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block bg-gray-100 text-gray-500">{cliente.tipo}</span>
                     </div>
-                    <button 
-                        onClick={() => abrirEditar(cliente)} 
-                        className="bg-gray-100 text-gray-600 p-2 rounded-lg text-sm font-bold"
-                    >
-                        ✏️
-                    </button>
+                    <button onClick={() => abrirEditar(cliente)} className="bg-gray-100 text-gray-600 p-2 rounded-lg text-sm font-bold">✏️</button>
                 </div>
-                
                 <div className="space-y-1 border-t border-gray-100 pt-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span>📞</span> <span className="font-mono">{cliente.telefone || 'Sem telefone'}</span>
-                    </div>
-                    {cliente.email && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600 truncate">
-                            <span>📧</span> <span className="truncate">{cliente.email}</span>
-                        </div>
-                    )}
-                    {cliente.endereco && (
-                        <div className="flex items-start gap-2 text-sm text-gray-600">
-                            <span>📍</span> 
-                            <span>
-                                {cliente.endereco}, {cliente.numero} <br/>
-                                <span className="text-xs text-gray-400">{cliente.bairro}</span>
-                            </span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2 text-sm text-gray-600"><span>📞</span> <span className="font-mono">{cliente.telefone || 'Sem telefone'}</span></div>
+                    {cliente.email && (<div className="flex items-center gap-2 text-sm text-gray-600 truncate"><span>📧</span> <span className="truncate">{cliente.email}</span></div>)}
+                    {cliente.endereco && (<div className="flex items-start gap-2 text-sm text-gray-600"><span>📍</span> <span>{cliente.endereco}, {cliente.numero} <br/><span className="text-xs text-gray-400">{cliente.bairro}</span></span></div>)}
                 </div>
             </div>
         ))}
@@ -230,22 +205,15 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
       {clientes.length === 0 && <div className="p-8 text-center text-gray-400">Nenhum cliente cadastrado.</div>}
 
-      {/* === MODAL UNIFICADO (CRIAR/EDITAR) === */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            {/* Ajustado max-h e overflow para mobile */}
             <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh] md:max-h-auto">
-                
-                {/* Cabeçalho Fixo do Modal */}
                 <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100">
                     <h2 className="text-xl md:text-2xl font-black text-gray-900">{modoEdicao ? 'Editar Cliente' : 'Novo Cliente'}</h2>
                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
                 </div>
                 
-                {/* Corpo do Modal com Scroll */}
                 <form onSubmit={handleSalvar} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                    
-                    {/* SEÇÃO 1: DADOS BÁSICOS */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Dados Principais</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -259,22 +227,34 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase">Tipo *</label>
-                                <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 cursor-pointer">
-                                    <option value="consumidor">Pessoa Física</option>
-                                    <option value="emporio">Empório / Revenda</option>
-                                    <option value="restaurante">Restaurante</option>
+                                {/* ALTERAÇÃO 5: Select apenas com PF e PJ */}
+                                <select 
+                                    value={tipo} 
+                                    onChange={e => { setTipo(e.target.value); setCpfCnpj('') }} 
+                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 cursor-pointer"
+                                >
+                                    <option value="PF">Pessoa Física</option>
+                                    <option value="PJ">Pessoa Jurídica</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    {/* SEÇÃO 2: FISCAL */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Dados Fiscais</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase">CPF / CNPJ</label>
-                                <input value={cpfCnpj} onChange={e => setCpfCnpj(maskCpfCnpj(e.target.value))} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-mono text-gray-900" placeholder="000.000.000-00" />
+                                <label className="text-xs font-bold text-gray-500 uppercase">
+                                    {tipo === 'PF' ? 'CPF' : 'CNPJ'}
+                                </label>
+                                {/* ALTERAÇÃO 6: Input com máscara dinâmica */}
+                                <input 
+                                    value={cpfCnpj} 
+                                    onChange={e => handleDocChange(e.target.value)} 
+                                    maxLength={tipo === 'PF' ? 14 : 18}
+                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-mono text-gray-900" 
+                                    placeholder={tipo === 'PF' ? '000.000.000-00' : '00.000.000/0001-00'} 
+                                />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase">E-mail (Para NFe)</label>
@@ -283,7 +263,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                         </div>
                     </div>
 
-                    {/* SEÇÃO 3: ENDEREÇO */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Endereço</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -319,11 +298,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                     </div>
 
                     <div className="pt-2">
-                        <button 
-                            type="submit" 
-                            disabled={loading}
-                            className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 cursor-pointer"
-                        >
+                        <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 cursor-pointer">
                             {loading ? 'Salvando...' : (modoEdicao ? 'Atualizar Cliente' : 'Cadastrar Cliente')}
                         </button>
                     </div>

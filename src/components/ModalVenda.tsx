@@ -16,7 +16,8 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   // Dados do Cliente
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [tipoCliente, setTipoCliente] = useState('consumidor')
+  // ALTERAÇÃO 1: Tipo padrão PF e tipagem simplificada
+  const [tipoCliente, setTipoCliente] = useState('PF') 
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [clienteIdSelecionado, setClienteIdSelecionado] = useState<string | null>(null)
   
@@ -32,7 +33,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [precoUnit375, setPrecoUnit375] = useState<number | string>(PRECO_PADRAO.GARRAFA_375)
   const [valorTotal, setValorTotal] = useState<number | string>('')
 
-  // Quantidades e Lotes
+  // Quantidades e Lotes (MANTIDO ORIGINAL)
   const [qtdL750, setQtdL750] = useState<number | string>('')
   const [qtdL375, setQtdL375] = useState<number | string>('')
   const [qtdA750, setQtdA750] = useState<number | string>('')
@@ -52,10 +53,26 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     return val ? val.replace(/^(\d*)/, "($1") : ""
   }
 
-  const maskCpfCnpj = (v: string) => {
-    v = v.replace(/\D/g, "")
-    if (v.length <= 11) return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-    return v.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
+  // ALTERAÇÃO 2: Máscaras separadas para PF e PJ
+  const handleDocChange = (v: string) => {
+    const limpo = v.replace(/\D/g, "")
+    
+    if (tipoCliente === 'PF') {
+        // Máscara CPF (000.000.000-00)
+        let cpf = limpo.substring(0, 11)
+        cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
+        cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
+        cpf = cpf.replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+        setCpfCnpj(cpf)
+    } else {
+        // Máscara CNPJ (00.000.000/0001-00)
+        let cnpj = limpo.substring(0, 14)
+        cnpj = cnpj.replace(/^(\d{2})(\d)/, "$1.$2")
+        cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        cnpj = cnpj.replace(/\.(\d{3})(\d)/, ".$1/$2")
+        cnpj = cnpj.replace(/(\d{4})(\d)/, "-$1")
+        setCpfCnpj(cnpj)
+    }
   }
 
   // === LOAD ===
@@ -67,6 +84,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
         const { data: clientes } = await supabase.from('Cliente').select('*').order('nome')
         if (clientes) setListaClientes(clientes)
+        
+        // Resetar form
+        setTipoCliente('PF')
+        setCpfCnpj('')
       }
       fetchData()
     }
@@ -88,7 +109,8 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const selecionarCliente = (cliente: any) => {
     setNome(cliente.nome)
     setTelefone(cliente.telefone || '')
-    setTipoCliente(cliente.tipo || 'consumidor')
+    // ALTERAÇÃO 3: Normaliza o tipo vindo do banco ou define padrão
+    setTipoCliente(cliente.tipo || 'PF')
     setCpfCnpj(cliente.cpf_cnpj || '')
     setClienteIdSelecionado(cliente.id)
     setMostrarSugestoes(false)
@@ -111,12 +133,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
   const validarItem = (nomeProd: string, tam: number, qtdInput: number | string, loteId: string) => {
     const qtd = Number(qtdInput) || 0
-    // Se tem quantidade mas não tem lote -> ERRO
     if (qtd > 0 && !loteId) {
         alert(`Selecione o LOTE de origem para ${nomeProd}`)
         return false
     }
-    // Se não tem quantidade -> Ignora
     if (qtd <= 0) return true 
 
     const lote = lotesDisponiveis.find(l => l.id === loteId)
@@ -137,7 +157,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     if (!validarItem('Arancello 750ml', 750, qtdA750, loteA750)) return
     if (!validarItem('Arancello 375ml', 375, qtdA375, loteA375)) return
     
-    // Verifica se tem pelo menos 1 item
     if (!qtdL750 && !qtdL375 && !qtdA750 && !qtdA375) return alert("Adicione pelo menos 1 item")
 
     setLoading(true)
@@ -148,7 +167,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         const { data: existente } = await supabase.from('Cliente').select('id').eq('telefone', telefone).single()
         if (existente) {
             finalClienteId = existente.id
-            if(cpfCnpj) await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj }).eq('id', finalClienteId)
+            if(cpfCnpj) await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj, tipo: tipoCliente }).eq('id', finalClienteId)
         } else {
             const { data: novo } = await supabase.from('Cliente').insert({ nome, telefone, tipo: tipoCliente, cpf_cnpj: cpfCnpj }).select().single()
             finalClienteId = novo.id
@@ -164,8 +183,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         
         await supabase.from('itens_venda').insert({ venda_id: venda.id, produto: prod, tamanho: tam, quantidade: qtd, preco_unitario: preco, lote_id: loteId || null })
         
-        // REMOVIDO: incrementar_estoque (Legado)
-        // AGORA SÓ BAIXA DO LOTE:
         if (loteId) {
             const coluna = tam === 750 ? 'estoque_750' : 'estoque_375'
             await supabase.rpc('baixar_estoque_lote', { p_lote_id: loteId, p_coluna: coluna, p_qtd: qtd })
@@ -180,6 +197,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       alert("Venda realizada com sucesso!")
       router.refresh()
       onClose()
+      // Limpeza
       setNome(''); setTelefone(''); setCpfCnpj(''); setClienteIdSelecionado(null);
       setQtdL750(''); setQtdL375(''); setQtdA750(''); setQtdA375('');
       setLoteL750(''); setLoteL375(''); setLoteA750(''); setLoteA375('');
@@ -213,7 +231,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         <form onSubmit={handleVenda} className="flex-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                {/* ESQUERDA */}
+                {/* ESQUERDA - DADOS DO CLIENTE */}
                 <div className="space-y-6">
                     <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Dados do Cliente</span>
@@ -228,7 +246,8 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                                 <span className="font-bold text-gray-900 text-sm">{cli.nome}</span>
                                                 <div className="flex gap-2">
                                                     {cli.cpf_cnpj && <span className="text-[10px] bg-gray-200 text-gray-600 px-1 rounded font-mono">{cli.cpf_cnpj}</span>}
-                                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${cli.tipo === 'restaurante' ? 'bg-purple-100 text-purple-700' : cli.tipo === 'emporio' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{cli.tipo}</span>
+                                                    {/* ALTERAÇÃO 4: Exibição apenas de PF/PJ na lista */}
+                                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">{cli.tipo}</span>
                                                 </div>
                                             </div>
                                             <p className="text-xs text-gray-400">{cli.telefone}</p>
@@ -240,18 +259,25 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
                         <div className="flex gap-3">
                             <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatarTelefone(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
-                            <select value={tipoCliente} onChange={e => setTipoCliente(e.target.value)} className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold cursor-pointer">
-                                <option value="consumidor">Pessoa</option>
-                                <option value="emporio">Empório</option>
-                                <option value="restaurante">Restaurante</option>
+                            
+                            {/* ALTERAÇÃO 5: Select apenas com PF e PJ */}
+                            <select 
+                                value={tipoCliente} 
+                                onChange={e => { setTipoCliente(e.target.value); setCpfCnpj('') }} 
+                                className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold cursor-pointer"
+                            >
+                                <option value="PF">PF</option>
+                                <option value="PJ">PJ</option>
                             </select>
                         </div>
                         
                         <div>
+                            {/* ALTERAÇÃO 6: Input com máscara dinâmica */}
                             <input 
-                                placeholder="CPF / CNPJ (Opcional para Nota)" 
+                                placeholder={tipoCliente === 'PF' ? "CPF (Opcional)" : "CNPJ (Opcional)"}
                                 value={cpfCnpj} 
-                                onChange={e => setCpfCnpj(maskCpfCnpj(e.target.value))} 
+                                onChange={e => handleDocChange(e.target.value)} 
+                                maxLength={tipoCliente === 'PF' ? 14 : 18}
                                 className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-mono placeholder-gray-400" 
                             />
                         </div>
@@ -263,7 +289,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                     </div>
                 </div>
 
-                {/* DIREITA */}
+                {/* DIREITA - PRODUTOS (MANTIDO ORIGINAL) */}
                 <div className="space-y-6 flex flex-col h-full">
                     <div className="space-y-3">
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-yellow-400 transition-colors shadow-sm">
