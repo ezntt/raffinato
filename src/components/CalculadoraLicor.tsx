@@ -12,6 +12,7 @@ export function CalculadoraLicor() {
   const [litrosInput, setLitrosInput] = useState('')
   const [tipo, setTipo] = useState<'limoncello' | 'arancello'>('limoncello')
 
+  // Estoques
   const [estAcucar, setEstAcucar] = useState<{id: string, qtd: number} | null>(null)
   const [estBaseL, setEstBaseL] = useState<{id: string, qtd: number} | null>(null)
   const [estBaseA, setEstBaseA] = useState<{id: string, qtd: number} | null>(null)
@@ -24,7 +25,7 @@ export function CalculadoraLicor() {
     try {
         const { data } = await supabase.from('Insumo').select('id, nome, quantidade_atual')
         if (data) {
-            // Busca exata pelas constantes
+            // Busca exata usando as constantes para não ter erro
             const acucar = data.find(i => i.nome === NOME_INSUMO.ACUCAR)
             const baseL = data.find(i => i.nome === NOME_INSUMO.BASE_LIMONCELLO)
             const baseA = data.find(i => i.nome === NOME_INSUMO.BASE_ARANCELLO)
@@ -52,6 +53,7 @@ export function CalculadoraLicor() {
   const totalAguaMl = totalAcucarGramas * fatorAgua
   const garrafasEstimadas = volumeTotalLitros / 0.75
 
+  // Seleção e Validação
   const estBaseSelecionada = tipo === 'limoncello' ? estBaseL : estBaseA
   const saldoAcucar = (estAcucar?.qtd || 0) - kgAcucarNecessarios
   const saldoBase = (estBaseSelecionada?.qtd || 0) - volBaseNecessariaL
@@ -61,8 +63,12 @@ export function CalculadoraLicor() {
     if (!loteManual.trim()) return alert("Digite o NÚMERO DO LOTE.")
     if (volumeTotalLitros <= 0) return alert("Insira uma quantidade válida.")
 
+    // VALIDAÇÃO CRÍTICA: Se não achou os IDs no banco, avisa e para.
+    if (!estAcucar) return alert(`ERRO: Item '${NOME_INSUMO.ACUCAR}' não encontrado no estoque.`)
+    if (!estBaseSelecionada) return alert(`ERRO: Item Base Alcoólica não encontrado no estoque.`)
+
     if (!temInsumos) {
-        if (!window.confirm("ATENÇÃO: Estoque INSUFICIENTE. Continuar mesmo assim?")) return
+        if (!window.confirm("ATENÇÃO: Estoque INSUFICIENTE. Deseja continuar e negativar o estoque?")) return
     } else {
         if (!window.confirm(`Confirma a produção de ${volumeTotalLitros}L de ${tipo}?`)) return
     }
@@ -70,6 +76,7 @@ export function CalculadoraLicor() {
     setLoading(true)
 
     try {
+        // 1. Atualiza ou Cria o Lote
         const { data: loteExistente } = await supabase.from('Lote').select('*').eq('id', loteManual).maybeSingle()
         const hoje = new Date()
         const novoItemHistorico = { data: hoje.toISOString(), volume: volumeTotalLitros }
@@ -99,15 +106,21 @@ export function CalculadoraLicor() {
             })
         }
 
-        if (estAcucar) await supabase.rpc('decrement_estoque', { p_id: estAcucar.id, p_qtd: kgAcucarNecessarios })
-        if (estBaseSelecionada) await supabase.rpc('decrement_estoque', { p_id: estBaseSelecionada.id, p_qtd: volBaseNecessariaL })
+        // 2. Baixa Estoque (Agora garantido que a função SQL existe)
+        // Usa IDs validados anteriormente
+        await supabase.rpc('decrement_estoque', { p_id: estAcucar.id, p_qtd: kgAcucarNecessarios })
+        await supabase.rpc('decrement_estoque', { p_id: estBaseSelecionada.id, p_qtd: volBaseNecessariaL })
         
         await supabase.from('Logs').insert({ categoria: 'PRODUCAO', acao: 'PRODUCAO_LOTE', descricao: `Lote ${loteManual}: +${volumeTotalLitros}L ${tipo}` })
 
-        alert(`Lote ${loteManual} registrado com sucesso!`)
+        alert(`Lote ${loteManual} registrado e insumos descontados!`)
         router.push('/lotes')
         
-    } catch (error: any) { alert("Erro: " + error.message) } finally { setLoading(false) }
+    } catch (error: any) {
+        alert("Erro ao salvar: " + error.message)
+    } finally {
+        setLoading(false)
+    }
   }
 
   const RowEstoque = ({ label, atual, necessario, saldo, unidade }: any) => (
@@ -147,14 +160,7 @@ export function CalculadoraLicor() {
                 <div>
                     <span className="block text-sm font-bold text-gray-700 mb-2">Volume a Produzir (Litros)</span>
                     <div className="relative">
-                        <input 
-                            type="text" 
-                            inputMode="decimal"
-                            placeholder='0'
-                            value={litrosInput} 
-                            onChange={(e) => setLitrosInput(e.target.value)} 
-                            className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" 
-                        />
+                        <input type="text" inputMode="decimal" placeholder='0' value={litrosInput} onChange={(e) => setLitrosInput(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" />
                     </div>
                 </div>
             </div>
@@ -188,45 +194,15 @@ export function CalculadoraLicor() {
                 <div>
                   <p className="text-xs text-blue-600 font-bold uppercase mb-2">2. Xarope ({(RECEITA.RAZAO_XAROPE * 100).toFixed(2)}%)</p>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Água</span>
-                      <span className="text-3xl font-mono font-bold text-gray-900">
-                        {(totalAguaMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small>
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Açúcar</span>
-                      <span className="text-3xl font-mono font-bold text-gray-900">
-                        {kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-400">kg</small>
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-end border-b border-gray-100 pb-2 bg-gray-50 px-2 rounded">
-                        <span className="text-blue-600 font-bold text-sm">Volume de Calda/Xarope</span>
-                        <span className="text-xl font-mono font-bold text-blue-600">
-                            {(volXaropeNecessarioMl / 1000).toFixed(2)} <small className="text-sm text-blue-400">L</small>
-                        </span>
-                    </div>
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-2"><span className="text-gray-500">Água</span><span className="text-3xl font-mono font-bold text-gray-900">{(totalAguaMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small></span></div>
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-2"><span className="text-gray-500">Açúcar</span><span className="text-3xl font-mono font-bold text-gray-900">{kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-400">kg</small></span></div>
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-8 pt-6 border-t border-gray-100">
-               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-4">
-                  <span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado</span>
-                  <span className="text-3xl font-mono font-black text-green-600">
-                      ± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-700">garrafas</span>
-                  </span>
-               </div>
-               
-               <button
-                type="button"
-                onClick={handleSalvarLote}
-                disabled={loading}
-                className={`w-full font-bold py-5 rounded-2xl shadow-lg cursor-pointer transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 
-                    ${temInsumos ? 'bg-black hover:bg-gray-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
-              >
-                {loading ? 'Salvando...' : (temInsumos ? 'Confirmar Produção' : 'Estoque Insuficiente (Forçar)')}
-              </button>
+               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-4"><span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado</span><span className="text-3xl font-mono font-black text-green-600">± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-700">garrafas</span></span></div>
+               <button type="button" onClick={handleSalvarLote} disabled={loading} className={`w-full font-bold py-5 rounded-2xl shadow-lg cursor-pointer transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 ${temInsumos ? 'bg-black hover:bg-gray-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}>{loading ? 'Salvando...' : (temInsumos ? 'Confirmar Produção' : 'Estoque Insuficiente (Forçar)')}</button>
             </div>
         </div>
       </div>
