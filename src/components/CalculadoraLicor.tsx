@@ -86,13 +86,8 @@ export function CalculadoraLicor() {
                 setLoading(false)
                 return alert(`ERRO: O Lote ${loteManual} já existe mas é de ${loteExistente.produto.toUpperCase()}.`)
             }
-
+            
             const historicoAtual = loteExistente.historico_producao || []
-            // Se lote antigo não tem histórico no JSON mas tem qtd gravada, assumimos que é a primeira entrada do array
-            if (historicoAtual.length === 0 && loteExistente.qtd_garrafas_750 > 0) {
-                 // Lógica opcional de migração
-            }
-
             await supabase.from('Lote').update({ 
                 volume_litros: (loteExistente.volume_litros || 0) + volumeTotalLitros,
                 volume_atual: (loteExistente.volume_atual || 0) + volumeTotalLitros,
@@ -211,44 +206,44 @@ export function CalculadoraLicor() {
             </div>
         </div>
 
-        {/* COLUNA DIREITA: RECEITA */}
-        <div className="md:col-span-8 bg-gray-900 text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col justify-between h-full min-h-[500px]">
+        {/* COLUNA DIREITA: FICHA TÉCNICA (AGORA COM FUNDO PADRÃO) */}
+        <div className="md:col-span-8 bg-white text-gray-900 p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between h-full min-h-[500px]">
             <div>
-              <div className="flex justify-between items-center border-b border-gray-700 pb-4 mb-6">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-6">
                  <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ficha Técnica</h2>
-                 <span className="text-xs font-mono text-gray-500 capitalize">{loteManual ? `Lote: ${loteManual}` : 'Novo Lote'}</span>
+                 <span className="text-xs font-mono text-gray-400 capitalize">{loteManual ? `Lote: ${loteManual}` : 'Novo Lote'}</span>
               </div>
               
               <div className="space-y-8">
                 <div>
-                  <p className="text-xs text-yellow-500 font-bold uppercase mb-2">1. Base Alcoólica ({(RECEITA.RAZAO_ALCOOL * 100).toFixed(2)}%)</p>
-                  <div className="flex justify-between items-end border-b border-gray-800 pb-2">
-                    <span className="text-gray-300">Base {tipo === 'limoncello' ? 'Limoncello' : 'Arancello'}</span>
-                    <span className="text-3xl font-mono font-bold text-yellow-400">
-                      {volBaseNecessariaL.toFixed(2)} <small className="text-sm text-gray-500">L</small>
+                  <p className="text-xs text-yellow-600 font-bold uppercase mb-2">1. Base Alcoólica ({(RECEITA.RAZAO_ALCOOL * 100).toFixed(2)}%)</p>
+                  <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+                    <span className="text-gray-500">Base {tipo === 'limoncello' ? 'Limoncello' : 'Arancello'}</span>
+                    <span className="text-3xl font-mono font-bold text-gray-900">
+                      {volBaseNecessariaL.toFixed(2)} <small className="text-sm text-gray-400">L</small>
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-xs text-blue-400 font-bold uppercase mb-2">2. Preparo do Xarope ({(RECEITA.RAZAO_XAROPE * 100).toFixed(2)}%)</p>
+                  <p className="text-xs text-blue-600 font-bold uppercase mb-2">2. Preparo do Xarope ({(RECEITA.RAZAO_XAROPE * 100).toFixed(2)}%)</p>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-end border-b border-gray-800 pb-2">
-                      <span className="text-gray-300">Água Filtrada</span>
-                      <span className="text-3xl font-mono font-bold text-blue-400">
-                        {(totalAguaMl / 1000).toFixed(2)} <small className="text-sm text-gray-500">L</small>
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+                      <span className="text-gray-500">Água Filtrada</span>
+                      <span className="text-3xl font-mono font-bold text-gray-900">
+                        {(totalAguaMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small>
                       </span>
                     </div>
-                    <div className="flex justify-between items-end border-b border-gray-800 pb-2">
-                      <span className="text-gray-300">Açúcar Refinado</span>
-                      <span className="text-3xl font-mono font-bold text-white">
-                        {kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-500">kg</small>
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+                      <span className="text-gray-500">Açúcar Refinado</span>
+                      <span className="text-3xl font-mono font-bold text-gray-900">
+                        {kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-400">kg</small>
                       </span>
                     </div>
-                    <div className="flex justify-between items-end border-b border-gray-800 pb-2 bg-blue-900/20 px-2 rounded">
-                        <span className="text-blue-200">Volume de Calda/Xarope</span>
-                        <span className="text-xl font-mono font-bold text-blue-200">
-                            {(volXaropeNecessarioMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small>
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-2 bg-gray-50 px-2 rounded">
+                        <span className="text-blue-600 font-bold text-sm">Volume de Calda/Xarope</span>
+                        <span className="text-xl font-mono font-bold text-blue-600">
+                            {(volXaropeNecessarioMl / 1000).toFixed(2)} <small className="text-sm text-blue-400">L</small>
                         </span>
                     </div>
                   </div>
@@ -256,11 +251,11 @@ export function CalculadoraLicor() {
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-700">
-               <div className="bg-gray-800 p-4 rounded-xl border border-green-900/50 flex justify-between items-center mb-4">
+            <div className="mt-8 pt-6 border-t border-gray-100">
+               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-4">
                   <span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado</span>
-                  <span className="text-3xl font-mono font-black text-green-400">
-                      ± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-600">garrafas</span>
+                  <span className="text-3xl font-mono font-black text-green-600">
+                      ± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-700">garrafas</span>
                   </span>
                </div>
                
@@ -269,13 +264,12 @@ export function CalculadoraLicor() {
                 onClick={handleSalvarLote}
                 disabled={loading}
                 className={`w-full font-bold py-5 rounded-2xl shadow-lg cursor-pointer transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 
-                    ${temInsumos ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                    ${temInsumos ? 'bg-black hover:bg-gray-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
               >
                 {loading ? 'Salvando...' : (temInsumos ? 'Confirmar Produção' : 'Estoque Insuficiente (Forçar)')}
               </button>
             </div>
         </div>
-
       </div>
   )
 }

@@ -22,6 +22,7 @@ export const RECEITA = {
 export const NOME_INSUMO = {
     GARRAFA_750: 'Garrafa Vidro 750ml',
     GARRAFA_375: 'Garrafa Vidro 375ml',
+    GARRAFA_XAROPE_VAZIA: 'Garrafa Xarope 1L',
     TAMPA: 'Tampa',
     LACRE: 'Lacre',
     ROTULO_LIMONCELLO_750: 'Rótulo Limoncello 750ml',
