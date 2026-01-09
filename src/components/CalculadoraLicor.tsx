@@ -196,6 +196,12 @@ export function CalculadoraLicor() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-end border-b border-gray-100 pb-2"><span className="text-gray-500">Água</span><span className="text-3xl font-mono font-bold text-gray-900">{(totalAguaMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small></span></div>
                     <div className="flex justify-between items-end border-b border-gray-100 pb-2"><span className="text-gray-500">Açúcar</span><span className="text-3xl font-mono font-bold text-gray-900">{kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-400">kg</small></span></div>
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-2 bg-gray-50 px-2 rounded">
+                        <span className="text-blue-600 font-bold text-sm">Volume de Calda/Xarope</span>
+                        <span className="text-xl font-mono font-bold text-blue-600">
+                            {(volXaropeNecessarioMl / 1000).toFixed(2)} <small className="text-sm text-blue-400">L</small>
+                        </span>
+                    </div>
                   </div>
                 </div>
               </div>

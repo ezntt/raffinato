@@ -108,8 +108,7 @@ export function CalculadoraXarope() {
                 <div className="mb-2">
                     <span className="block text-sm font-bold text-gray-700 mb-2">Suco de Limão</span>
                     <div className="relative">
-                        <input type="number" autoFocus placeholder='Ex: 5' value={sucoInput} onChange={(e) => setSucoInput(e.target.value)} className="w-full p-4 bg-white border-2 border-gray-200 focus:border-black rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Litros</span>
+                        <input type="number" autoFocus placeholder='0' value={sucoInput} onChange={(e) => setSucoInput(e.target.value)} className="w-full p-4 bg-white border-2 border-gray-200 focus:border-black rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" />
                     </div>
                     <p className="text-xs text-right mt-2 text-gray-400 italic">Não desconta do estoque</p>
                 </div>
@@ -137,7 +136,6 @@ export function CalculadoraXarope() {
             <div>
                 <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-8">Resultado Previsto</h2>
                 <div className="flex items-center gap-6 mb-8">
-                    <div className="text-6xl text-gray-900">🏺</div>
                     <div><span className="block text-5xl font-black text-gray-900">{garrafasGeradas}</span><span className="text-xl font-bold text-gray-400">Garrafas Prontas</span></div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-sm font-medium space-y-1 border border-gray-200">
