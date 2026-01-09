@@ -12,15 +12,14 @@ export default async function Home() {
     .select('*')
     .order('created_at', { ascending: false })
 
-  // 2. Busca Xarope (Insumo)
-  const { data: insumoXarope } = await supabase
-    .from('Insumo')
-    .select('quantidade_atual')
-    .eq('nome', 'Xarope Limão Siciliano') // Ou 'Garrafa Xarope (Cheia)' se for esse o nome
+  // 2. Busca Xarope (Nova Tabela)
+  // Como só tem 1 linha, usamos single()
+  const { data: dadosXarope } = await supabase
+    .from('EstoqueXarope')
+    .select('quantidade')
     .single()
 
-  // Se não achar, assume 0
-  const qtdXarope = insumoXarope?.quantidade_atual || 0
+  const qtdXarope = dadosXarope?.quantidade || 0
 
   return (
     <main>

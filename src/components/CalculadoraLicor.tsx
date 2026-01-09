@@ -2,21 +2,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { RECEITA } from '@/lib/constants'
+import { RECEITA, NOME_INSUMO } from '@/lib/constants'
 
 export function CalculadoraLicor() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   
-  // Inputs
   const [loteManual, setLoteManual] = useState('')
   const [litrosInput, setLitrosInput] = useState('')
   const [tipo, setTipo] = useState<'limoncello' | 'arancello'>('limoncello')
 
-  // Estoques
-  const [estoqueAcucar, setEstoqueAcucar] = useState<{id: string, qtd: number} | null>(null)
-  const [estoqueBaseL, setEstoqueBaseL] = useState<{id: string, qtd: number} | null>(null)
-  const [estoqueBaseA, setEstoqueBaseA] = useState<{id: string, qtd: number} | null>(null)
+  const [estAcucar, setEstAcucar] = useState<{id: string, qtd: number} | null>(null)
+  const [estBaseL, setEstBaseL] = useState<{id: string, qtd: number} | null>(null)
+  const [estBaseA, setEstBaseA] = useState<{id: string, qtd: number} | null>(null)
 
   useEffect(() => {
     fetchEstoques()
@@ -26,42 +24,37 @@ export function CalculadoraLicor() {
     try {
         const { data } = await supabase.from('Insumo').select('id, nome, quantidade_atual')
         if (data) {
-            const acucar = data.find(i => i.nome.toLowerCase().includes('acucar') || i.nome.toLowerCase().includes('açúcar'))
-            const baseL = data.find(i => i.nome === 'Base Alcoólica Limoncello')
-            const baseA = data.find(i => i.nome === 'Base Alcoólica Arancello')
+            // Busca exata pelas constantes
+            const acucar = data.find(i => i.nome === NOME_INSUMO.ACUCAR)
+            const baseL = data.find(i => i.nome === NOME_INSUMO.BASE_LIMONCELLO)
+            const baseA = data.find(i => i.nome === NOME_INSUMO.BASE_ARANCELLO)
 
-            if (acucar) setEstoqueAcucar({ id: acucar.id, qtd: acucar.quantidade_atual })
-            if (baseL) setEstoqueBaseL({ id: baseL.id, qtd: baseL.quantidade_atual })
-            if (baseA) setEstoqueBaseA({ id: baseA.id, qtd: baseA.quantidade_atual })
+            if (acucar) setEstAcucar({ id: acucar.id, qtd: acucar.quantidade_atual })
+            if (baseL) setEstBaseL({ id: baseL.id, qtd: baseL.quantidade_atual })
+            if (baseA) setEstBaseA({ id: baseA.id, qtd: baseA.quantidade_atual })
         }
     } catch (err) { console.error(err) }
   }
 
-  // === CÁLCULOS ===
+  // Cálculos
   const volumeTotalLitros = Number(litrosInput.replace(',', '.')) || 0
   const volumeTotalMl = volumeTotalLitros * 1000
 
-  // 1. Base (29,17%)
   const volBaseNecessariaMl = volumeTotalMl * RECEITA.RAZAO_ALCOOL
   const volBaseNecessariaL = volBaseNecessariaMl / 1000
 
-  // 2. Xarope (70,83%)
   const volXaropeNecessarioMl = volumeTotalMl * RECEITA.RAZAO_XAROPE
-
-  // Decomposição Xarope
   const fatorXarope = tipo === 'limoncello' ? RECEITA.FATOR_XAROPE_LIMONCELLO : RECEITA.FATOR_XAROPE_ARANCELLO
   const fatorAgua = tipo === 'limoncello' ? RECEITA.AGUA_POR_G_ACUCAR_LIMONCELLO : RECEITA.AGUA_POR_G_ACUCAR_ARANCELLO
 
   const totalAcucarGramas = volXaropeNecessarioMl / fatorXarope
   const kgAcucarNecessarios = totalAcucarGramas / 1000
   const totalAguaMl = totalAcucarGramas * fatorAgua
-
   const garrafasEstimadas = volumeTotalLitros / 0.75
 
-  // Validação Estoque
-  const estoqueBaseSelecionada = tipo === 'limoncello' ? estoqueBaseL : estoqueBaseA
-  const saldoAcucar = (estoqueAcucar?.qtd || 0) - kgAcucarNecessarios
-  const saldoBase = (estoqueBaseSelecionada?.qtd || 0) - volBaseNecessariaL
+  const estBaseSelecionada = tipo === 'limoncello' ? estBaseL : estBaseA
+  const saldoAcucar = (estAcucar?.qtd || 0) - kgAcucarNecessarios
+  const saldoBase = (estBaseSelecionada?.qtd || 0) - volBaseNecessariaL
   const temInsumos = saldoAcucar >= 0 && saldoBase >= 0
 
   const handleSalvarLote = async () => {
@@ -69,9 +62,9 @@ export function CalculadoraLicor() {
     if (volumeTotalLitros <= 0) return alert("Insira uma quantidade válida.")
 
     if (!temInsumos) {
-        if (!window.confirm("ATENÇÃO: Estoque INSUFICIENTE. Deseja continuar mesmo assim e negativar o estoque?")) return
+        if (!window.confirm("ATENÇÃO: Estoque INSUFICIENTE. Continuar mesmo assim?")) return
     } else {
-        if (!window.confirm(`Confirma a produção de ${volumeTotalLitros}L de ${tipo} para o lote ${loteManual}?`)) return
+        if (!window.confirm(`Confirma a produção de ${volumeTotalLitros}L de ${tipo}?`)) return
     }
 
     setLoading(true)
@@ -84,7 +77,7 @@ export function CalculadoraLicor() {
         if (loteExistente) {
             if (loteExistente.produto !== tipo) {
                 setLoading(false)
-                return alert(`ERRO: O Lote ${loteManual} já existe mas é de ${loteExistente.produto.toUpperCase()}.`)
+                return alert(`ERRO: O Lote ${loteManual} já existe e é de ${loteExistente.produto}.`)
             }
             
             const historicoAtual = loteExistente.historico_producao || []
@@ -99,7 +92,6 @@ export function CalculadoraLicor() {
         } else {
             const previsao = new Date()
             previsao.setDate(previsao.getDate() + 10)
-
             await supabase.from('Lote').insert({
                 id: loteManual, produto: tipo, volume_litros: volumeTotalLitros, volume_atual: volumeTotalLitros,
                 data_inicio: new Date(), data_previsao: previsao, status: 'em_infusao',
@@ -107,20 +99,15 @@ export function CalculadoraLicor() {
             })
         }
 
-        // Baixa Estoque
-        if (estoqueAcucar) await supabase.rpc('decrement_estoque', { p_id: estoqueAcucar.id, p_qtd: kgAcucarNecessarios })
-        if (estoqueBaseSelecionada) await supabase.rpc('decrement_estoque', { p_id: estoqueBaseSelecionada.id, p_qtd: volBaseNecessariaL })
+        if (estAcucar) await supabase.rpc('decrement_estoque', { p_id: estAcucar.id, p_qtd: kgAcucarNecessarios })
+        if (estBaseSelecionada) await supabase.rpc('decrement_estoque', { p_id: estBaseSelecionada.id, p_qtd: volBaseNecessariaL })
         
-        await supabase.from('Logs').insert({ categoria: 'PRODUCAO', acao: 'PRODUCAO_LOTE', descricao: `Produziu +${volumeTotalLitros}L de ${tipo} no Lote ${loteManual}` })
+        await supabase.from('Logs').insert({ categoria: 'PRODUCAO', acao: 'PRODUCAO_LOTE', descricao: `Lote ${loteManual}: +${volumeTotalLitros}L ${tipo}` })
 
-        alert(`Produção registrada no Lote ${loteManual} com sucesso!`)
+        alert(`Lote ${loteManual} registrado com sucesso!`)
         router.push('/lotes')
         
-    } catch (error: any) {
-        alert("Erro ao salvar: " + error.message)
-    } finally {
-        setLoading(false)
-    }
+    } catch (error: any) { alert("Erro: " + error.message) } finally { setLoading(false) }
   }
 
   const RowEstoque = ({ label, atual, necessario, saldo, unidade }: any) => (
@@ -137,13 +124,9 @@ export function CalculadoraLicor() {
 
   return (
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        
-        {/* COLUNA ESQUERDA: INPUTS E ESTOQUE */}
         <div className="md:col-span-4 space-y-6">
-            
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Planejamento</label>
-                
                 <div className="mb-6">
                     <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
                     <div className="flex gap-2">
@@ -157,20 +140,10 @@ export function CalculadoraLicor() {
                         </div>
                     </div>
                 </div>
-
                 <div className="mb-6">
-                    <span className="block text-sm font-bold text-gray-700 mb-2">
-                        Nº do Lote (Data Compra)
-                    </span>
-                    <input 
-                        type="text" 
-                        placeholder='Ex: 050126'
-                        value={loteManual}
-                        onChange={(e) => setLoteManual(e.target.value.toUpperCase())}
-                        className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-xl text-lg font-bold text-gray-900 outline-none transition-all placeholder:font-normal" 
-                    />
+                    <span className="block text-sm font-bold text-gray-700 mb-2">Nº do Lote</span>
+                    <input type="text" placeholder='Ex: 050126' value={loteManual} onChange={(e) => setLoteManual(e.target.value.toUpperCase())} className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-black rounded-xl text-lg font-bold text-gray-900 outline-none" />
                 </div>
-
                 <div>
                     <span className="block text-sm font-bold text-gray-700 mb-2">Volume a Produzir (Litros)</span>
                     <div className="relative">
@@ -187,55 +160,42 @@ export function CalculadoraLicor() {
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    Disponibilidade
-                </h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">Disponibilidade</h3>
                 {volumeTotalLitros > 0 ? (
                     <div className="space-y-1">
-                        <RowEstoque label={`Base ${tipo}`} atual={estoqueBaseSelecionada?.qtd || 0} necessario={volBaseNecessariaL} saldo={saldoBase} unidade="L" />
-                        <RowEstoque label="Açúcar" atual={estoqueAcucar?.qtd || 0} necessario={kgAcucarNecessarios} saldo={saldoAcucar} unidade="kg" />
-                        {!temInsumos && (
-                             <div className="mt-3 text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded text-center uppercase tracking-wide">
-                                 Estoque Insuficiente
-                             </div>
-                        )}
+                        <RowEstoque label={`Base ${tipo}`} atual={estBaseSelecionada?.qtd || 0} necessario={volBaseNecessariaL} saldo={saldoBase} unidade="L" />
+                        <RowEstoque label="Açúcar" atual={estAcucar?.qtd || 0} necessario={kgAcucarNecessarios} saldo={saldoAcucar} unidade="kg" />
+                        {!temInsumos && (<div className="mt-3 text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded text-center uppercase tracking-wide">Estoque Insuficiente</div>)}
                     </div>
-                ) : (
-                    <p className="text-sm text-gray-400 italic">Digite o volume para calcular o estoque.</p>
-                )}
+                ) : (<p className="text-sm text-gray-400 italic">Digite o volume.</p>)}
             </div>
         </div>
 
-        {/* COLUNA DIREITA: FICHA TÉCNICA (AGORA COM FUNDO PADRÃO) */}
         <div className="md:col-span-8 bg-white text-gray-900 p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between h-full min-h-[500px]">
             <div>
               <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-6">
                  <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ficha Técnica</h2>
-                 <span className="text-xs font-mono text-gray-400 capitalize">{loteManual ? `Lote: ${loteManual}` : 'Novo Lote'}</span>
+                 <span className="text-xs font-mono text-gray-400 capitalize">{loteManual || 'Novo Lote'}</span>
               </div>
-              
               <div className="space-y-8">
                 <div>
                   <p className="text-xs text-yellow-600 font-bold uppercase mb-2">1. Base Alcoólica ({(RECEITA.RAZAO_ALCOOL * 100).toFixed(2)}%)</p>
                   <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                     <span className="text-gray-500">Base {tipo === 'limoncello' ? 'Limoncello' : 'Arancello'}</span>
-                    <span className="text-3xl font-mono font-bold text-gray-900">
-                      {volBaseNecessariaL.toFixed(2)} <small className="text-sm text-gray-400">L</small>
-                    </span>
+                    <span className="text-3xl font-mono font-bold text-gray-900">{volBaseNecessariaL.toFixed(2)} <small className="text-sm text-gray-400">L</small></span>
                   </div>
                 </div>
-
                 <div>
-                  <p className="text-xs text-blue-600 font-bold uppercase mb-2">2. Preparo do Xarope ({(RECEITA.RAZAO_XAROPE * 100).toFixed(2)}%)</p>
+                  <p className="text-xs text-blue-600 font-bold uppercase mb-2">2. Xarope ({(RECEITA.RAZAO_XAROPE * 100).toFixed(2)}%)</p>
                   <div className="space-y-4">
                     <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Água Filtrada</span>
+                      <span className="text-gray-500">Água</span>
                       <span className="text-3xl font-mono font-bold text-gray-900">
                         {(totalAguaMl / 1000).toFixed(2)} <small className="text-sm text-gray-400">L</small>
                       </span>
                     </div>
                     <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Açúcar Refinado</span>
+                      <span className="text-gray-500">Açúcar</span>
                       <span className="text-3xl font-mono font-bold text-gray-900">
                         {kgAcucarNecessarios.toFixed(2)} <small className="text-sm text-gray-400">kg</small>
                       </span>
@@ -250,7 +210,6 @@ export function CalculadoraLicor() {
                 </div>
               </div>
             </div>
-
             <div className="mt-8 pt-6 border-t border-gray-100">
                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-4">
                   <span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado</span>
