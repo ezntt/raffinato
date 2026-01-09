@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import * as CONST from '@/lib/constants'
 
 interface Props {
   isOpen: boolean
@@ -29,9 +30,9 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
   const fetchInsumos = async () => {
     const { data } = await supabase.from('Insumo').select('id, nome, quantidade_atual')
     if (data) {
-      const puro = data.find(i => i.nome === 'Álcool Branco')
-      const baseL = data.find(i => i.nome === 'Base Alcoólica Limoncello')
-      const baseA = data.find(i => i.nome === 'Base Alcoólica Arancello')
+      const puro = data.find(i => i.nome === CONST.NOME_INSUMO.ALCOOL)
+      const baseL = data.find(i => i.nome === CONST.NOME_INSUMO.BASE_LIMONCELLO)
+      const baseA = data.find(i => i.nome === CONST.NOME_INSUMO.BASE_ARANCELLO)
 
       if (puro) { setIdAlcoolPuro(puro.id); setSaldoPuro(puro.quantidade_atual) }
       if (baseL) setIdBaseL(baseL.id)
