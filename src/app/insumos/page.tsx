@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabaseServer'
 import { InsumosList } from '@/components/InsumosList'
+import { RECEITA, NOME_INSUMO, PRECO_PADRAO } from '@/lib/constants'
 
 export const revalidate = 0
 
@@ -18,15 +19,15 @@ export default async function InsumosPage() {
     
     // EMBALAGENS (Prioridade Máxima conforme seu pedido)
     if (n.includes('garrafa')) return 1
-    if (n.includes('rótulo') || n.includes('rotulo')) return 2
-    if (n.includes('tampa')) return 3
-    if (n.includes('lacre')) return 4
+    if (n.includes('rótulo')) return 2
+    if (n === NOME_INSUMO.TAMPA) return 3
+    if (n === NOME_INSUMO.LACRE) return 4
     
     // INGREDIENTES (Também merecem destaque)
-    if (n.includes('álcool') || n.includes('alcool')) return 1
-    if (n.includes('açúcar') || n.includes('acucar')) return 2
-    if (n.includes('limão') || n.includes('limao')) return 3
-    if (n.includes('laranja')) return 3
+    if (n === NOME_INSUMO.ALCOOL) return 1
+    if (n === NOME_INSUMO.ACUCAR) return 2
+    if (n === NOME_INSUMO.LIMAO) return 3
+    if (n === NOME_INSUMO.LARANJA) return 3
     
     // Resto vai pro final
     return 99

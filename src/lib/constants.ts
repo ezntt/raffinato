@@ -13,11 +13,13 @@ export const NOME_INSUMO = {
     GARRAFA_750: 'Garrafa Vidro 750ml',
     GARRAFA_375: 'Garrafa Vidro 375ml',
     
-    // CORRIGIDO: Deve ser idêntico ao CSV do banco
     GARRAFA_XAROPE_VAZIA: 'Garrafa Xarope', 
     
     TAMPA: 'Tampa',
     LACRE: 'Lacre',
+
+    LIMAO: 'Limão Siciliano',
+    LARANJA: 'Laranja',
     
     ROTULO_LIMONCELLO_750: 'Rótulo Limoncello 750ml',
     ROTULO_LIMONCELLO_375: 'Rótulo Limoncello 375ml',
@@ -29,6 +31,10 @@ export const NOME_INSUMO = {
     
     BASE_LIMONCELLO: 'Base Alcoólica Limoncello',
     BASE_ARANCELLO: 'Base Alcoólica Arancello',
+
+    SACOLA: 'Sacola',
+    CAIXA_DE_PAPELAO: 'Caixa de Papelão',
+    EMBALAGEM_VELUDO: 'Embalagem Veludo',
 }
 
 export const PRECO_PADRAO = {

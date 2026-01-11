@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import * as CONST from '@/lib/constants'
+import { NOME_INSUMO } from '@/lib/constants'
 
 interface Props {
   isOpen: boolean
@@ -30,9 +30,9 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
   const fetchInsumos = async () => {
     const { data } = await supabase.from('Insumo').select('id, nome, quantidade_atual')
     if (data) {
-      const puro = data.find(i => i.nome === CONST.NOME_INSUMO.ALCOOL)
-      const baseL = data.find(i => i.nome === CONST.NOME_INSUMO.BASE_LIMONCELLO)
-      const baseA = data.find(i => i.nome === CONST.NOME_INSUMO.BASE_ARANCELLO)
+      const puro = data.find(i => i.nome === NOME_INSUMO.ALCOOL)
+      const baseL = data.find(i => i.nome === NOME_INSUMO.BASE_LIMONCELLO)
+      const baseA = data.find(i => i.nome === NOME_INSUMO.BASE_ARANCELLO)
 
       if (puro) { setIdAlcoolPuro(puro.id); setSaldoPuro(puro.quantidade_atual) }
       if (baseL) setIdBaseL(baseL.id)
@@ -40,47 +40,6 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
     }
   }
 
-  const handleMacerar = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const volume = Number(qtd)
-    if (volume <= 0) return alert("Digite uma quantidade válida.")
-    if (volume > saldoPuro) return alert("Quantidade maior que o estoque de Álcool de Cereais.")
-
-    const idDestino = tipo === 'limoncello' ? idBaseL : idBaseA
-    if (!idDestino || !idAlcoolPuro) return alert("Insumos de Base não encontrados. Verifique o cadastro.")
-
-    setLoading(true)
-    try {
-        // 1. Desconta do Álcool Puro
-        const { error: err1 } = await supabase.rpc('decrement_estoque', { p_id: idAlcoolPuro, p_qtd: volume })
-        if (err1) throw err1
-
-        // 2. Adiciona na Base (Conversão 1:1 por enquanto)
-        const { error: err2 } = await supabase.rpc('increment_estoque_insumo', { p_id: idDestino, p_qtd: volume })
-        if (err2) throw err2
-
-        // 3. Log
-        await supabase.from('MovimentacaoInsumo').insert({
-            insumo_id: idDestino,
-            tipo: 'ajuste', // ou criar um tipo 'producao'
-            quantidade: volume,
-            valor_total: 0,
-            observacao: `Maceração: Transformado ${volume}L de Álcool Puro em Base ${tipo}`
-        })
-
-        alert("Maceração registrada com sucesso!")
-        router.refresh()
-        onClose()
-        setQtd('')
-    } catch (err: any) {
-        alert("Erro: " + err.message)
-    } finally {
-        setLoading(false)
-    }
-  }
-
-  // Funções RPC auxiliares caso não existam, usando update direto:
-  // Se você não tiver as RPCs acima, vou usar update direto abaixo para garantir (é menos atômico mas funciona para 1 usuário):
   const handleMacerarDireto = async (e: React.FormEvent) => {
     e.preventDefault()
     const volume = Number(qtd)
@@ -131,7 +90,7 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
 
         <form onSubmit={handleMacerarDireto} className="space-y-4">
             <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 text-sm text-blue-800">
-                <span className="font-bold block">Estoque Álcool Puro:</span>
+                <span className="font-bold block">Estoque de {NOME_INSUMO.ALCOOL}:</span>
                 <span className="text-xl font-black">{saldoPuro} L</span>
             </div>
 
@@ -145,7 +104,7 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
 
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase ml-1">Quantidade (Litros)</label>
-                <input type="number" step="0.1" autoFocus value={qtd} onChange={e => setQtd(e.target.value)} className="w-full text-gray-900 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-bold text-xl" placeholder="0.0" />
+                <input type="number" step="0.1" autoFocus value={qtd} onChange={e => setQtd(e.target.value)} className="w-full text-gray-900 p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-bold text-xl" placeholder="0" />
             </div>
 
             <button type="submit" disabled={loading} className="w-full cursor-pointer bg-black hover:bg-gray-800 text-white font-bold py-3 rounded-xl shadow-lg transition-all disabled:opacity-50">

@@ -6,7 +6,7 @@ import { ModalVenda } from '@/components/ModalVenda'
 
 interface Props {
   lotes: any[]
-  estoqueXarope: number // Nova prop
+  estoqueXarope: number
 }
 
 export function DashboardClient({ lotes, estoqueXarope }: Props) {
@@ -134,7 +134,6 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
           Pronta Entrega (Estoque Atual)
         </h2>
 
-        {/* Agora grid com 3 colunas para caber o Xarope */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Limoncello */}
@@ -159,7 +158,7 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
             </div>
           </div>
 
-          {/* NOVO: Xarope de Limão */}
+          {/* Xarope */}
           <div className="bg-lime-50 p-8 rounded-3xl border border-lime-100 relative overflow-hidden">
             <div className="relative z-10">
               <h3 className="text-xl font-black text-lime-900 mb-6 flex items-center gap-2">🍯 Xarope</h3>
