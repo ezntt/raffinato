@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { PRECO_PADRAO } from '@/lib/constants'
+import { PRECO_PADRAO, NOME_INSUMO } from '@/lib/constants'
 
 interface Props {
   isOpen: boolean
@@ -32,7 +32,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [precoUnit375, setPrecoUnit375] = useState<number | string>(PRECO_PADRAO.GARRAFA_375)
   const [valorTotal, setValorTotal] = useState<number | string>('')
 
-  // Quantidades
+  // Quantidades Produtos
   const [qtdL750, setQtdL750] = useState<number | string>('')
   const [qtdL375, setQtdL375] = useState<number | string>('')
   const [qtdA750, setQtdA750] = useState<number | string>('')
@@ -44,6 +44,16 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [loteL375, setLoteL375] = useState<string>('')
   const [loteA750, setLoteA750] = useState<string>('')
   const [loteA375, setLoteA375] = useState<string>('')
+
+  // Embalagens de Expedição (ATUALIZADO)
+  const [qtdSacolas, setQtdSacolas] = useState<number | string>('')
+  const [qtdCaixas, setQtdCaixas] = useState<number | string>('')
+  const [qtdVeludo, setQtdVeludo] = useState<number | string>('')
+  
+  const [estoqueEmbalagem, setEstoqueEmbalagem] = useState({ 
+      sacola: 0, caixa: 0, veludo: 0,
+      idSacola: '', idCaixa: '', idVeludo: '' 
+  })
 
   // Mask de telefone
   const formatarTelefone = (v: string) => {
@@ -57,16 +67,13 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   // Mask de PF e PJ
   const handleDocChange = (v: string) => {
     const limpo = v.replace(/\D/g, "")
-    
     if (tipoCliente === 'PF') {
-        // Máscara CPF (000.000.000-00)
         let cpf = limpo.substring(0, 11)
         cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
         cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
         cpf = cpf.replace(/(\d{3})(\d{1,2})$/, "$1-$2")
         setCpfCnpj(cpf)
     } else {
-        // Máscara CNPJ (00.000.000/0001-00)
         let cnpj = limpo.substring(0, 14)
         cnpj = cnpj.replace(/^(\d{2})(\d)/, "$1.$2")
         cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
@@ -80,15 +87,37 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
+        // 1. Busca Lotes
         const { data: lotes } = await supabase.from('Lote').select('id, produto, estoque_750, estoque_375').or('estoque_750.gt.0,estoque_375.gt.0')
         if (lotes) setLotesDisponiveis(lotes)
 
+        // 2. Busca Clientes
         const { data: clientes } = await supabase.from('Cliente').select('*').order('nome')
         if (clientes) setListaClientes(clientes)
+
+        // 3. Busca Estoque de Embalagens (ATUALIZADO)
+        const { data: insumos } = await supabase.from('Insumo').select('id, nome, quantidade_atual').in('nome', [NOME_INSUMO.SACOLA, NOME_INSUMO.CAIXA_DE_PAPELAO, NOME_INSUMO.EMBALAGEM_VELUDO])
+        if (insumos) {
+            const sacola = insumos.find(i => i.nome === NOME_INSUMO.SACOLA)
+            const caixa = insumos.find(i => i.nome === NOME_INSUMO.CAIXA_DE_PAPELAO)
+            const veludo = insumos.find(i => i.nome === NOME_INSUMO.EMBALAGEM_VELUDO)
+            
+            setEstoqueEmbalagem({
+                sacola: sacola?.quantidade_atual || 0,
+                caixa: caixa?.quantidade_atual || 0,
+                veludo: veludo?.quantidade_atual || 0,
+                idSacola: sacola?.id || '',
+                idCaixa: caixa?.id || '',
+                idVeludo: veludo?.id || ''
+            })
+        }
         
         // Resetar form
         setTipoCliente('PF')
         setCpfCnpj('')
+        setQtdSacolas('')
+        setQtdCaixas('')
+        setQtdVeludo('')
       }
       fetchData()
     }
@@ -159,9 +188,19 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     
     if (!qtdL750 && !qtdL375 && !qtdA750 && !qtdA375) return alert("Adicione pelo menos 1 item")
 
+    // Validação de Estoque de Embalagem (Aviso apenas)
+    const qSacola = Number(qtdSacolas) || 0
+    const qCaixa = Number(qtdCaixas) || 0
+    const qVeludo = Number(qtdVeludo) || 0
+
+    if (qSacola > estoqueEmbalagem.sacola) if(!confirm(`Estoque de Sacolas insuficiente (${estoqueEmbalagem.sacola}). Continuar?`)) return
+    if (qCaixa > estoqueEmbalagem.caixa) if(!confirm(`Estoque de Caixas insuficiente (${estoqueEmbalagem.caixa}). Continuar?`)) return
+    if (qVeludo > estoqueEmbalagem.veludo) if(!confirm(`Estoque de Veludo insuficiente (${estoqueEmbalagem.veludo}). Continuar?`)) return
+
     setLoading(true)
 
     try {
+      // 1. Cliente
       let finalClienteId = clienteIdSelecionado
       if (!finalClienteId) {
         const { data: existente } = await supabase.from('Cliente').select('id').eq('telefone', telefone).single()
@@ -174,9 +213,11 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         }
       }
 
+      // 2. Venda
       const { data: venda, error: errVenda } = await supabase.from('vendas').insert({ cliente_id: finalClienteId, valor_total: Number(valorTotal), observacao, pago }).select().single()
       if (errVenda) throw errVenda
 
+      // 3. Itens e Baixa Lote
       const processarItem = async (prod: string, tam: number, qtdStr: string | number, preco: number, loteId: string) => {
         const qtd = Number(qtdStr) || 0
         if (qtd <= 0) return
@@ -194,13 +235,30 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       await processarItem('arancello', 750, qtdA750, Number(precoUnit750), loteA750)
       await processarItem('arancello', 375, qtdA375, Number(precoUnit375), loteA375)
 
+      // 4. Baixa de Embalagem (ATUALIZADO)
+      if (qSacola > 0 && estoqueEmbalagem.idSacola) {
+          await supabase.from('Insumo').update({ quantidade_atual: estoqueEmbalagem.sacola - qSacola }).eq('id', estoqueEmbalagem.idSacola)
+          await supabase.from('MovimentacaoInsumo').insert({ insumo_id: estoqueEmbalagem.idSacola, tipo: 'uso', quantidade: qSacola, observacao: `Venda #${venda.id}` })
+      }
+      if (qCaixa > 0 && estoqueEmbalagem.idCaixa) {
+          await supabase.from('Insumo').update({ quantidade_atual: estoqueEmbalagem.caixa - qCaixa }).eq('id', estoqueEmbalagem.idCaixa)
+          await supabase.from('MovimentacaoInsumo').insert({ insumo_id: estoqueEmbalagem.idCaixa, tipo: 'uso', quantidade: qCaixa, observacao: `Venda #${venda.id}` })
+      }
+      if (qVeludo > 0 && estoqueEmbalagem.idVeludo) {
+          await supabase.from('Insumo').update({ quantidade_atual: estoqueEmbalagem.veludo - qVeludo }).eq('id', estoqueEmbalagem.idVeludo)
+          await supabase.from('MovimentacaoInsumo').insert({ insumo_id: estoqueEmbalagem.idVeludo, tipo: 'uso', quantidade: qVeludo, observacao: `Venda #${venda.id}` })
+      }
+
       alert("Venda realizada com sucesso!")
       router.refresh()
       onClose()
+      
       // Limpeza
       setNome(''); setTelefone(''); setCpfCnpj(''); setClienteIdSelecionado(null);
       setQtdL750(''); setQtdL375(''); setQtdA750(''); setQtdA375('');
       setLoteL750(''); setLoteL375(''); setLoteA750(''); setLoteA375('');
+      setQtdSacolas(''); setQtdCaixas(''); setQtdVeludo('');
+
     } catch (error: any) {
       alert("Erro: " + error.message)
     } finally {
@@ -231,13 +289,13 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         <form onSubmit={handleVenda} className="flex-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                {/* DADOS DO CLIENTE */}
+                {/* ESQUERDA - DADOS DO CLIENTE */}
                 <div className="space-y-6">
                     <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Dados do Cliente</span>
                         
                         <div className="relative">
-                            <input required placeholder="Nome do Cliente (Digite para buscar)" value={nome} onChange={e => handleNomeChange(e.target.value)} onFocus={() => nome && setMostrarSugestoes(true)} className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
+                            <input required placeholder="Nome do Cliente (Digite para buscar)" value={nome} onChange={e => handleNomeChange(e.target.value)} onFocus={() => nome && setMostrarSugestoes(true)} className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-bold placeholder-gray-400" />
                             {mostrarSugestoes && sugestoes.length > 0 && (
                                 <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-xl max-h-40 overflow-y-auto">
                                     {sugestoes.map(cli => (
@@ -246,7 +304,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                                                 <span className="font-bold text-gray-900 text-sm">{cli.nome}</span>
                                                 <div className="flex gap-2">
                                                     {cli.cpf_cnpj && <span className="text-[10px] bg-gray-200 text-gray-600 px-1 rounded font-mono">{cli.cpf_cnpj}</span>}
-                                                    {/* ALTERAÇÃO 4: Exibição apenas de PF/PJ na lista */}
                                                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">{cli.tipo}</span>
                                                 </div>
                                             </div>
@@ -258,13 +315,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                         </div>
 
                         <div className="flex gap-3">
-                            <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatarTelefone(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold placeholder-gray-400" />
+                            <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatarTelefone(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-bold placeholder-gray-400" />
                             
-                            {/* ALTERAÇÃO 5: Select apenas com PF e PJ */}
                             <select 
                                 value={tipoCliente} 
                                 onChange={e => { setTipoCliente(e.target.value); setCpfCnpj('') }} 
-                                className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-bold cursor-pointer"
+                                className="w-1/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-bold cursor-pointer"
                             >
                                 <option value="PF">PF</option>
                                 <option value="PJ">PJ</option>
@@ -272,43 +328,67 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                         </div>
                         
                         <div>
-                            {/* ALTERAÇÃO 6: Input com máscara dinâmica */}
                             <input 
                                 placeholder={tipoCliente === 'PF' ? "CPF (Opcional)" : "CNPJ (Opcional)"}
                                 value={cpfCnpj} 
                                 onChange={e => handleDocChange(e.target.value)} 
                                 maxLength={tipoCliente === 'PF' ? 14 : 18}
-                                className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-gray-900 font-mono placeholder-gray-400" 
+                                className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-mono placeholder-gray-400" 
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                        <div className="flex-1"><label className="text-[10px] font-bold text-blue-400 uppercase block mb-1">Preço 750ml</label><input type="number" value={precoUnit750} onChange={e => handleNumChange(e.target.value, setPrecoUnit750)} className="w-full p-2 bg-white border border-blue-200 rounded-lg font-bold text-blue-900 outline-none focus:ring-2 ring-blue-200" /></div>
-                        <div className="flex-1"><label className="text-[10px] font-bold text-blue-400 uppercase block mb-1">Preço 375ml</label><input type="number" value={precoUnit375} onChange={e => handleNumChange(e.target.value, setPrecoUnit375)} className="w-full p-2 bg-white border border-blue-200 rounded-lg font-bold text-blue-900 outline-none focus:ring-2 ring-blue-200" /></div>
+                        <div className="flex-1"><label className="text-[10px] font-bold text-blue-400 uppercase block mb-1">Preço 750ml</label><input type="number" value={precoUnit750} onChange={e => handleNumChange(e.target.value, setPrecoUnit750)} className="w-full p-2 bg-white border border-blue-200 rounded-lg font-bold text-black outline-none focus:ring-2 ring-blue-200" /></div>
+                        <div className="flex-1"><label className="text-[10px] font-bold text-blue-400 uppercase block mb-1">Preço 375ml</label><input type="number" value={precoUnit375} onChange={e => handleNumChange(e.target.value, setPrecoUnit375)} className="w-full p-2 bg-white border border-blue-200 rounded-lg font-bold text-black outline-none focus:ring-2 ring-blue-200" /></div>
                     </div>
                 </div>
 
-                {/* DIREITA - PRODUTOS (MANTIDO ORIGINAL) */}
+                {/* DIREITA - PRODUTOS */}
                 <div className="space-y-6 flex flex-col h-full">
                     <div className="space-y-3">
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-yellow-400 transition-colors shadow-sm">
                             <div className="w-24 text-right pt-2"><span className="block font-black text-gray-900 uppercase text-sm">Limoncello</span></div>
                             <div className="flex-1 flex gap-2">
-                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdL750} onChange={e => handleNumChange(e.target.value, setQtdL750)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-gray-900 text-center outline-none focus:bg-yellow-50 focus:text-yellow-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">750ml</span><SelectLote prod="limoncello" tam={750} val={loteL750} setVal={setLoteL750} /></div>
-                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdL375} onChange={e => handleNumChange(e.target.value, setQtdL375)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-gray-900 text-center outline-none focus:bg-yellow-50 focus:text-yellow-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">375ml</span><SelectLote prod="limoncello" tam={375} val={loteL375} setVal={setLoteL375} /></div>
+                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdL750} onChange={e => handleNumChange(e.target.value, setQtdL750)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-black text-center outline-none focus:bg-yellow-50 focus:text-yellow-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">750ml</span><SelectLote prod="limoncello" tam={750} val={loteL750} setVal={setLoteL750} /></div>
+                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdL375} onChange={e => handleNumChange(e.target.value, setQtdL375)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-black text-center outline-none focus:bg-yellow-50 focus:text-yellow-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">375ml</span><SelectLote prod="limoncello" tam={375} val={loteL375} setVal={setLoteL375} /></div>
                             </div>
                         </div>
                         <div className="flex items-start gap-4 bg-white border border-gray-100 p-3 rounded-xl hover:border-orange-400 transition-colors shadow-sm">
                             <div className="w-24 text-right pt-2"><span className="block font-black text-gray-900 uppercase text-sm">Arancello</span></div>
                             <div className="flex-1 flex gap-2">
-                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdA750} onChange={e => handleNumChange(e.target.value, setQtdA750)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-gray-900 text-center outline-none focus:bg-orange-50 focus:text-orange-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">750ml</span><SelectLote prod="arancello" tam={750} val={loteA750} setVal={setLoteA750} /></div>
-                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdA375} onChange={e => handleNumChange(e.target.value, setQtdA375)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-gray-900 text-center outline-none focus:bg-orange-50 focus:text-orange-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">375ml</span><SelectLote prod="arancello" tam={375} val={loteA375} setVal={setLoteA375} /></div>
+                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdA750} onChange={e => handleNumChange(e.target.value, setQtdA750)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-black text-center outline-none focus:bg-orange-50 focus:text-orange-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">750ml</span><SelectLote prod="arancello" tam={750} val={loteA750} setVal={setLoteA750} /></div>
+                                <div className="relative flex-1"><input type="number" placeholder="0" value={qtdA375} onChange={e => handleNumChange(e.target.value, setQtdA375)} className="w-full p-2 pl-12 bg-gray-50 rounded-lg font-black text-black text-center outline-none focus:bg-orange-50 focus:text-orange-900 transition-colors" /><span className="absolute left-2 top-3 text-[10px] font-bold text-gray-400">375ml</span><SelectLote prod="arancello" tam={375} val={loteA375} setVal={setLoteA375} /></div>
                             </div>
                         </div>
                     </div>
 
-                    <textarea value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Observações..." className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-gray-400 text-gray-900 font-medium h-20 resize-none" />
+                    {/* SEÇÃO DE EMBALAGEM */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 grid grid-cols-3 gap-2">
+                        <div>
+                            <div className="flex justify-between mb-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">Sacolas</label>
+                                <span className="text-[10px] font-bold text-gray-400">Disp: {estoqueEmbalagem.sacola}</span>
+                            </div>
+                            <input type="number" placeholder="0" value={qtdSacolas} onChange={e => handleNumChange(e.target.value, setQtdSacolas)} className="w-full p-2 bg-white border border-gray-200 rounded-lg font-bold text-center outline-none focus:border-black text-black" />
+                        </div>
+                        <div>
+                            <div className="flex justify-between mb-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">Caixas</label>
+                                <span className="text-[10px] font-bold text-gray-400">Disp: {estoqueEmbalagem.caixa}</span>
+                            </div>
+                            <input type="number" placeholder="0" value={qtdCaixas} onChange={e => handleNumChange(e.target.value, setQtdCaixas)} className="w-full p-2 bg-white border border-gray-200 rounded-lg font-bold text-center outline-none focus:border-black text-black" />
+                        </div>
+                        <div>
+                            <div className="flex justify-between mb-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">Veludo</label>
+                                <span className="text-[10px] font-bold text-gray-400">Disp: {estoqueEmbalagem.veludo}</span>
+                            </div>
+                            <input type="number" placeholder="0" value={qtdVeludo} onChange={e => handleNumChange(e.target.value, setQtdVeludo)} className="w-full p-2 bg-white border border-gray-200 rounded-lg font-bold text-center outline-none focus:border-black text-black" />
+                        </div>
+                    </div>
+
+                    <textarea value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Observações..." className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-gray-400 text-black font-medium h-20 resize-none" />
 
                     <div className="mt-auto bg-gray-50 p-4 rounded-2xl border border-gray-100">
                          <div className="flex justify-between items-center mb-4">
