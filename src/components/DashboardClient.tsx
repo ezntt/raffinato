@@ -27,7 +27,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
 
   const fetchIndicadores = async () => {
     try {
-        // 1. Produção (Baseado nos Lotes - Mantido local pois 'lotes' já vem na prop)
+        // 1. Produção (Baseado nos Lotes)
         let p_l750 = 0, p_l375 = 0, p_a750 = 0, p_a375 = 0
         lotes.forEach(l => {
           if (l.produto === 'limoncello') { p_l750 += (l.qtd_garrafas_750 || 0); p_l375 += (l.qtd_garrafas_375 || 0) } 
@@ -35,12 +35,11 @@ export function DashboardClient({ lotes, estoque }: Props) {
         })
         const prodTotal = p_l750 + p_l375 + p_a750 + p_a375
         
-        // 2. Vendas (AGORA VIA RPC - MUITO MAIS RÁPIDO)
+        // 2. Vendas (RPC)
         const { data: stats, error } = await supabase.rpc('get_vendas_stats')
         
         if (error) throw error
 
-        // O RPC retorna um JSON, vamos parsear
         const detalhe = stats.detalhe || {}
         const v_l750 = Number(detalhe['limoncello_750'] || 0)
         const v_l375 = Number(detalhe['limoncello_375'] || 0)
@@ -56,7 +55,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
     } catch (err) { console.error(err) }
   }
 
-  // ... (Resto do código getQtd, abrirDetalhes, StockRow e JSX igual ao anterior) ...
+  // Mantido apenas para Xarope (que não tem lote)
   const getQtd = (slug: string) => {
     const item = estoque.find(i => i.slug === slug)
     return item ? item.quantidade : 0
@@ -67,16 +66,25 @@ export function DashboardClient({ lotes, estoque }: Props) {
         const qtdLote = tamanho === 750 ? l.estoque_750 : l.estoque_375
         return l.produto === produto && qtdLote > 0
     }).map(l => ({ id: l.id, qtd: tamanho === 750 ? l.estoque_750 : l.estoque_375, data: l.created_at }))
+    
     setDetailData({ produto, tamanho, itens: lotesComEstoque })
     setDetailOpen(true)
   }
 
+  // === CORREÇÃO AQUI: SOMA DINÂMICA DOS LOTES ===
   const StockRow = ({ produto, tamanho, colorText }: { produto: string, tamanho: number, colorText: string }) => {
-    const qtdTotal = getQtd(`${produto}_${tamanho}`)
+    // Calcula o total somando diretamente os lotes disponíveis
+    const qtdTotal = lotes.reduce((acc, l) => {
+        if (l.produto !== produto) return acc
+        const qtd = tamanho === 750 ? (l.estoque_750 || 0) : (l.estoque_375 || 0)
+        return acc + qtd
+    }, 0)
+
     const countLotes = lotes.filter(l => {
         const qtd = tamanho === 750 ? l.estoque_750 : l.estoque_375
         return l.produto === produto && qtd > 0
     }).length
+
     return (
         <div onClick={() => abrirDetalhes(produto, tamanho)} className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center cursor-pointer hover:bg-white transition-all group">
             <div className="flex flex-col">
@@ -107,7 +115,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </header>
 
-      {/* ... (Seções TANQUES e PRATELEIRA IGUAIS AO ANTERIOR) ... */}
+      {/* 1. TANQUES */}
       <section className="mb-10">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Em Maturação (Tanques)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -126,6 +134,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
+      {/* 2. PRATELEIRA */}
       <section className="mb-12">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span>Pronta Entrega (Estoque Atual)</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -153,7 +162,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* 3. ESTATÍSTICAS (MANTIDO O LAYOUT NOVO, MAS COM DADOS DO RPC) */}
+      {/* 3. ESTATÍSTICAS */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estatísticas Gerais</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -217,7 +226,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* ... (MODAL DETALHE e MODAL VENDA MANTIDOS) ... */}
+      {/* MODAL DETALHE ESTOQUE */}
       {detailOpen && detailData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
@@ -247,8 +256,11 @@ export function DashboardClient({ lotes, estoque }: Props) {
                         ))
                     )}
                 </div>
+                {/* CORREÇÃO DO TOTAL NO MODAL PARA BATER COM O CARD */}
                 <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                    <p className="text-xs text-gray-400">Total Geral: <span className="text-black font-bold">{getQtd(`${detailData.produto}_${detailData.tamanho}`)}</span> un</p>
+                    <p className="text-xs text-gray-400">Total Geral: <span className="text-black font-bold">{
+                        detailData.itens.reduce((acc, i) => acc + i.qtd, 0)
+                    }</span> un</p>
                 </div>
             </div>
         </div>
