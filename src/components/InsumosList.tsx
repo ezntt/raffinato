@@ -1,23 +1,32 @@
 // src/components/InsumosList.tsx
 
 "use client"
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ComprasList } from './ComprasList'
-import { ModalMaceracao } from './ModalMaceracao' // Importe o novo componente
+import { ModalMaceracao } from './ModalMaceracao'
+
+// Definição das Categorias Visuais
+const CATEGORIAS_VISUAIS = {
+  MATERIA_PRIMA: { titulo: 'Matéria-Prima', icone: '🍋', cor: 'bg-green-100 text-green-800 border-green-200' },
+  BASES: { titulo: 'Bases em Infusão', icone: '⚗️', cor: 'bg-purple-100 text-purple-800 border-purple-200' },
+  VIDROS: { titulo: 'Garrafas & Vidros', icone: '🍾', cor: 'bg-blue-100 text-blue-800 border-blue-200' },
+  ROTULOS: { titulo: 'Rótulos', icone: '🏷️', cor: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  FECHAMENTO: { titulo: 'Tampas & Lacres', icone: '🔒', cor: 'bg-gray-100 text-gray-800 border-gray-200' },
+  EXPEDICAO: { titulo: 'Expedição & Outros', icone: '📦', cor: 'bg-orange-100 text-orange-800 border-orange-200' },
+}
 
 export function InsumosList({ insumos, historico }: { insumos: any[], historico: any[] }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque')
   
-  // ... (manter estados existentes de compra) ...
+  // Estados de Compra e Modal
   const [modalOpen, setModalOpen] = useState(false)
-  const [maceracaoOpen, setMaceracaoOpen] = useState(false) // Novo Estado
-
-  // ... (manter lógica existente handleSalvarCompra e variáveis) ...
-  // Preciso redeclarar as variáveis para o código completo funcionar no contexto
+  const [maceracaoOpen, setMaceracaoOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  
+  // Form States
   const [selectedId, setSelectedId] = useState('')
   const [qtdCompra, setQtdCompra] = useState('')
   const [valorTotal, setValorTotal] = useState('')
@@ -25,14 +34,36 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
   const [fornecedor, setFornecedor] = useState('')     
   const [obs, setObs] = useState('')
 
-  const ingredientes = insumos.filter(i => i.categoria === 'ingrediente')
-  const embalagens = insumos.filter(i => i.categoria === 'embalagem')
   const itemSelecionado = insumos.find(i => i.id === selectedId)
 
-  // ... (Manter handleSalvarCompra, formatarQuantidade, CardInsumo iguais) ...
-  
+  // --- LÓGICA DE CATEGORIZAÇÃO INTELIGENTE ---
+  const insumosAgrupados = useMemo(() => {
+    const grupos: Record<string, any[]> = {
+      MATERIA_PRIMA: [], BASES: [], VIDROS: [], ROTULOS: [], FECHAMENTO: [], EXPEDICAO: []
+    }
+
+    insumos.forEach(item => {
+      const nome = item.nome.toLowerCase()
+      
+      if (nome.includes('base')) {
+        grupos.BASES.push(item)
+      } else if (nome.includes('álcool') || nome.includes('alcool') || nome.includes('açúcar') || nome.includes('acucar') || nome.includes('limão') || nome.includes('laranja')) {
+        grupos.MATERIA_PRIMA.push(item)
+      } else if (nome.includes('garrafa')) {
+        grupos.VIDROS.push(item)
+      } else if (nome.includes('rótulo') || nome.includes('rotulo')) {
+        grupos.ROTULOS.push(item)
+      } else if (nome.includes('tampa') || nome.includes('lacre') || nome.includes('rolha')) {
+        grupos.FECHAMENTO.push(item)
+      } else {
+        grupos.EXPEDICAO.push(item)
+      }
+    })
+
+    return grupos
+  }, [insumos])
+
   const handleSalvarCompra = async (e: React.FormEvent) => {
-      // ... (código existente da função) ...
       e.preventDefault()
       if(!selectedId) return alert("Selecione um insumo")
       setLoading(true)
@@ -57,22 +88,48 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
 
   const CardInsumo = ({ item }: { item: any }) => {
       const isNegativo = item.quantidade_atual < 0
+      const isBaixo = item.quantidade_atual <= item.estoque_minimo && !isNegativo
+      
       return (
-        <div className={`bg-white p-4 rounded-2xl border shadow-sm flex justify-between items-center transition-colors ${isNegativo ? 'border-red-200 bg-red-50/30' : 'border-gray-100 hover:border-gray-300'}`}>
-            <div>
+        <div className={`bg-white p-4 rounded-2xl border shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${isNegativo ? 'border-red-200 bg-red-50/30' : 'border-gray-100 hover:border-gray-300'}`}>
+            <div className="mb-3">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">{item.categoria}</span>
-                <h3 className="font-bold text-gray-900 text-lg">{item.nome}</h3>
+                <h3 className="font-bold text-gray-900 text-sm md:text-base leading-tight">{item.nome}</h3>
             </div>
-            <div className="text-right">
-                <span className={`block text-2xl font-black ${isNegativo ? 'text-red-600' : 'text-gray-900'}`}>
-                    {formatarQuantidade(item.quantidade_atual)} 
-                    <small className={`text-sm font-medium ml-1 ${isNegativo ? 'text-red-400' : 'text-gray-500'}`}>{item.unidade}</small>
-                </span>
-                {item.quantidade_atual <= item.estoque_minimo && !isNegativo && (<span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full">Baixo</span>)}
-                {isNegativo && (<span className="text-[10px] font-bold text-white bg-red-500 px-2 py-1 rounded-full animate-pulse">NEGATIVO</span>)}
+            
+            <div className="flex items-end justify-between border-t border-gray-50 pt-3">
+                <div className="flex gap-1">
+                   {isBaixo && (<span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">Baixo</span>)}
+                   {isNegativo && (<span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded animate-pulse">NEGATIVO</span>)}
+                </div>
+                <div className="text-right">
+                    <span className={`block text-xl font-black ${isNegativo ? 'text-red-600' : 'text-gray-900'}`}>
+                        {formatarQuantidade(item.quantidade_atual)} 
+                        <small className="text-xs font-bold text-gray-400 ml-0.5">{item.unidade}</small>
+                    </span>
+                </div>
             </div>
         </div>
       )
+  }
+
+  // Componente de Seção
+  const SecaoCategoria = ({ chave, items }: { chave: string, items: any[] }) => {
+    if (items.length === 0) return null
+    // @ts-ignore
+    const config = CATEGORIAS_VISUAIS[chave]
+
+    return (
+        <section className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg mb-6 ${config.cor}`}>
+                <h2 className="text-sm font-bold uppercase tracking-wide">{config.titulo}</h2>
+                <span className="bg-white/50 px-2 rounded-full text-xs font-bold ml-2">{items.length}</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {items.map(item => <CardInsumo key={item.id} item={item} />)}
+            </div>
+        </section>
+    )
   }
 
   return (
@@ -102,25 +159,21 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
       </div>
 
       {activeTab === 'estoque' ? (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <section>
-                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">Ingredientes</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {ingredientes.map(item => <CardInsumo key={item.id} item={item} />)}
-                </div>
-            </section>
-            <section>
-                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">Embalagens</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {embalagens.map(item => <CardInsumo key={item.id} item={item} />)}
-                </div>
-            </section>
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Renderiza as seções dinamicamente */}
+            {Object.keys(insumosAgrupados).map(chave => (
+                <SecaoCategoria 
+                    key={chave} 
+                    chave={chave} 
+                    items={insumosAgrupados[chave as keyof typeof insumosAgrupados]} 
+                />
+            ))}
           </div>
       ) : (
           <ComprasList compras={historico} />
       )}
 
-      {/* Modal Compra (Código Existente) */}
+      {/* Modal Compra */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -133,8 +186,18 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Insumo</label>
                         <select required value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 font-bold cursor-pointer">
                             <option value="">Selecione...</option>
-                            <optgroup label="Ingredientes">{ingredientes.map(i => <option key={i.id} value={i.id}>{i.nome}</option>)}</optgroup>
-                            <optgroup label="Embalagens">{embalagens.map(i => <option key={i.id} value={i.id}>{i.nome}</option>)}</optgroup>
+                            {/* Select também organizado por grupos */}
+                            {Object.keys(insumosAgrupados).map(chave => {
+                                const items = insumosAgrupados[chave as keyof typeof insumosAgrupados]
+                                // @ts-ignore
+                                if (items.length === 0) return null
+                                return (
+                                    // @ts-ignore
+                                    <optgroup key={chave} label={CATEGORIAS_VISUAIS[chave].titulo}>
+                                        {items.map(i => <option key={i.id} value={i.id}>{i.nome}</option>)}
+                                    </optgroup>
+                                )
+                            })}
                         </select>
                     </div>
                     <div className="flex gap-4">
