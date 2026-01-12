@@ -33,6 +33,9 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const [estado, setEstado] = useState('SC')
   const [complemento, setComplemento] = useState('')
 
+  // Estado de carregamento específico para APIs externas
+  const [buscandoDados, setBuscandoDados] = useState(false)
+
   // === HELPERS VISUAIS ===
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
 
@@ -45,12 +48,43 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     return v ? v.replace(/^(\d*)/, "($1") : ""
   }
 
-  const handleDocChange = (v: string) => {
+  // Máscara e Busca Automática de CNPJ
+  const handleDocChange = async (v: string) => {
       const limpo = v.replace(/\D/g, "")
+      
       if (tipo === 'PF') {
+          // Lógica CPF (Mantida)
           setCpfCnpj(limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4").substring(0, 14))
       } else {
-          setCpfCnpj(limpo.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5"))
+          // Lógica CNPJ
+          const formatado = limpo.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
+          setCpfCnpj(formatado)
+
+          // BUSCA DE CNPJ (NOVIDADE)
+          if (limpo.length === 14) {
+              setBuscandoDados(true)
+              try {
+                  const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`)
+                  const data = await res.json()
+                  
+                  if (!data.message) { // Se não houver erro
+                      if(!nome) setNome(data.razao_social || data.nome_fantasia) // Só preenche se vazio para não sobrescrever edição
+                      setCep(data.cep || '')
+                      setEndereco(data.logradouro || '')
+                      setNumero(data.numero || '')
+                      setBairro(data.bairro || '')
+                      setCidade(data.municipio || '')
+                      setEstado(data.uf || '')
+                      setComplemento(data.complemento || '')
+                      // Tenta focar no número se ele veio vazio
+                      if(!data.numero) document.getElementById('inputNumero')?.focus()
+                  }
+              } catch (error) {
+                  console.error("Erro ao buscar CNPJ", error)
+              } finally {
+                  setBuscandoDados(false)
+              }
+          }
       }
   }
 
@@ -61,6 +95,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const buscarCep = async (cepInput: string) => {
     const cepLimpo = cepInput.replace(/\D/g, '')
     if (cepLimpo.length === 8) {
+        setBuscandoDados(true)
         try {
             const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
             const data = await res.json()
@@ -73,6 +108,8 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
             }
         } catch (e) {
             console.error("Erro CEP", e)
+        } finally {
+            setBuscandoDados(false)
         }
     }
   }
@@ -104,17 +141,9 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     try {
         const { data, error } = await supabase
             .from('vendas')
-            // AQUI ESTÁ A MÁGICA: Trazendo os itens junto
             .select(`
-                id, 
-                data_venda, 
-                valor_total, 
-                pago,
-                itens_venda (
-                    produto,
-                    tamanho,
-                    quantidade
-                )
+                id, data_venda, valor_total, pago,
+                itens_venda (produto, tamanho, quantidade)
             `)
             .eq('cliente_id', c.id)
             .order('data_venda', { ascending: false })
@@ -167,10 +196,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   return (
     <>
       <div className="flex justify-end mb-4">
-        <button 
-            onClick={abrirNovo}
-            className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center"
-        >
+        <button onClick={abrirNovo} className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center">
             <span>+ Novo Cliente</span>
         </button>
       </div>
@@ -189,11 +215,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {clientes.map((cliente) => (
-                  <tr 
-                    key={cliente.id} 
-                    onClick={() => abrirCliente(cliente)} 
-                    className="hover:bg-blue-50 transition-colors group cursor-pointer"
-                  >
+                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors group cursor-pointer">
                     <td className="p-4">
                         <span className="block font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{cliente.nome}</span>
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block bg-gray-100 text-gray-500">{cliente.tipo}</span>
@@ -218,11 +240,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
       {/* LISTA MOBILE */}
       <div className="md:hidden space-y-4">
         {clientes.map((cliente) => (
-            <div 
-                key={cliente.id} 
-                onClick={() => abrirCliente(cliente)} 
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer"
-            >
+            <div key={cliente.id} onClick={() => abrirCliente(cliente)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer">
                 <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-bold text-gray-900 text-lg">{cliente.nome}</h3>
@@ -257,8 +275,11 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Dados Principais</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase">Nome Completo *</label>
-                                        <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900" />
+                                        <label className="text-xs font-bold text-gray-500 uppercase">
+                                            Nome / Razão Social *
+                                            {buscandoDados && <span className="text-blue-500 ml-2 animate-pulse font-normal lowercase">(buscando...)</span>}
+                                        </label>
+                                        <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900" placeholder="Digite o nome..." />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">WhatsApp *</label>
@@ -275,25 +296,44 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                             </div>
 
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">Dados Fiscais & Endereço</h3>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2">
+                                    Dados Fiscais & Endereço 
+                                    {buscandoDados && <span className="text-blue-500 ml-2 animate-pulse font-normal normal-case float-right">Consultando dados...</span>}
+                                </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase">{tipo === 'PF' ? 'CPF' : 'CNPJ'}</label>
-                                        <input value={cpfCnpj} onChange={e => handleDocChange(e.target.value)} maxLength={tipo === 'PF' ? 14 : 18} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-mono text-gray-900" />
+                                        <label className="text-xs font-bold text-gray-500 uppercase">{tipo === 'PF' ? 'CPF' : 'CNPJ (busca automática)'}</label>
+                                        <input value={cpfCnpj} onChange={e => handleDocChange(e.target.value)} maxLength={tipo === 'PF' ? 14 : 18} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-mono text-gray-900 placeholder-gray-300" placeholder={tipo === 'PJ' ? 'Digite para buscar...' : ''} />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">CEP</label>
                                         <input value={cep} onChange={e => { setCep(maskCep(e.target.value)); if(e.target.value.length >= 8) buscarCep(e.target.value) }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="md:col-span-2">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="md:col-span-3">
                                         <label className="text-xs font-bold text-gray-500 uppercase">Endereço</label>
                                         <input value={endereco} onChange={e => setEndereco(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">Número</label>
                                         <input id="inputNumero" value={numero} onChange={e => setNumero(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Bairro</label>
+                                        <input value={bairro} onChange={e => setBairro(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
+                                    </div>
+                                    <div className="md:col-span-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Cidade</label>
+                                        <input value={cidade} onChange={e => setCidade(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
+                                    </div>
+                                    <div className="md:col-span-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">UF</label>
+                                        <input value={estado} onChange={e => setEstado(e.target.value)} maxLength={2} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black uppercase text-gray-900" />
+                                    </div>
+                                    <div className="md:col-span-4">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Complemento</label>
+                                        <input value={complemento} onChange={e => setComplemento(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" placeholder="Apto, Sala, Ponto de referência..." />
                                     </div>
                                 </div>
                             </div>
@@ -303,11 +343,11 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                             </button>
                         </div>
 
-                        {/* SEÇÃO 2: HISTÓRICO VISUAL (COM ITENS) */}
+                        {/* SEÇÃO 2: HISTÓRICO VISUAL */}
                         {modoEdicao && (
                             <div className="border-t-2 border-dashed border-gray-200 pt-8 mt-8">
                                 <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
-                                    📜 Histórico de Compras — {<span className="text-gray-800 font-normal">{historicoVendas.length}</span>}
+                                    📜 Histórico de Compras — <span className="text-gray-800 font-normal">{historicoVendas.length}</span>
                                     {loadingHistorico && <span className="text-xs text-gray-400 font-normal animate-pulse">(Carregando...)</span>}
                                 </h3>
                                 
@@ -319,22 +359,12 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                     )}
 
                                     {historicoVendas.map(venda => (
-                                        <div 
-                                            key={venda.id} 
-                                            onClick={() => router.push(`/vendas/${venda.id}`)}
-                                            className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group shadow-sm"
-                                        >
+                                        <div key={venda.id} onClick={() => router.push(`/vendas/${venda.id}`)} className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group shadow-sm">
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
-                                                        #{venda.id}
-                                                    </span>
-                                                    <span className="text-xs text-gray-400 font-bold uppercase">
-                                                        {new Date(venda.data_venda).toLocaleDateString('pt-BR')}
-                                                    </span>
+                                                    <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">#{venda.id}</span>
+                                                    <span className="text-xs text-gray-400 font-bold uppercase">{new Date(venda.data_venda).toLocaleDateString('pt-BR')}</span>
                                                 </div>
-                                                
-                                                {/* LISTA DE ITENS COMPRADOS */}
                                                 <div className="text-sm font-medium text-gray-800 space-y-0.5">
                                                     {venda.itens_venda && venda.itens_venda.map((item: any, idx: number) => (
                                                         <div key={idx} className="flex items-center gap-1">
@@ -345,12 +375,9 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                                     ))}
                                                 </div>
                                             </div>
-                                            
                                             <div className="text-right w-full md:w-auto border-t md:border-0 border-gray-100 pt-2 md:pt-0 mt-2 md:mt-0 flex justify-between md:block items-center">
                                                 <span className="block text-lg font-black text-green-600">R$ {venda.valor_total.toFixed(2)}</span>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${venda.pago ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {venda.pago ? 'PAGO' : 'PENDENTE'}
-                                                </span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${venda.pago ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{venda.pago ? 'PAGO' : 'PENDENTE'}</span>
                                             </div>
                                         </div>
                                     ))}
