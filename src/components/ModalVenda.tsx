@@ -188,11 +188,11 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     
     if (!qtdL750 && !qtdL375 && !qtdA750 && !qtdA375) return alert("Adicione pelo menos 1 item")
 
-    // Validação de Estoque de Embalagem (Aviso apenas)
     const qSacola = Number(qtdSacolas) || 0
     const qCaixa = Number(qtdCaixas) || 0
     const qVeludo = Number(qtdVeludo) || 0
 
+    // Validações de embalagem (Mantidas)
     if (qSacola > estoqueEmbalagem.sacola) if(!confirm(`Estoque de Sacolas insuficiente (${estoqueEmbalagem.sacola}). Continuar?`)) return
     if (qCaixa > estoqueEmbalagem.caixa) if(!confirm(`Estoque de Caixas insuficiente (${estoqueEmbalagem.caixa}). Continuar?`)) return
     if (qVeludo > estoqueEmbalagem.veludo) if(!confirm(`Estoque de Veludo insuficiente (${estoqueEmbalagem.veludo}). Continuar?`)) return
@@ -200,7 +200,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     setLoading(true)
 
     try {
-      // 1. Cliente
+      // 1. Cliente (Lógica de criar/atualizar cliente mantida, pois é pré-requisito)
       let finalClienteId = clienteIdSelecionado
       if (!finalClienteId) {
         const { data: existente } = await supabase.from('Cliente').select('id').eq('telefone', telefone).single()
@@ -213,47 +213,36 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         }
       }
 
-      // 2. Venda
-      const { data: venda, error: errVenda } = await supabase.from('vendas').insert({ cliente_id: finalClienteId, valor_total: Number(valorTotal), observacao, pago }).select().single()
-      if (errVenda) throw errVenda
+      // 2. Montar Payload da Venda (JSON)
+      const itensVenda = []
+      if(Number(qtdL750)>0) itensVenda.push({ produto: 'limoncello', tamanho: 750, quantidade: Number(qtdL750), preco: Number(precoUnit750), lote_id: loteL750 || null })
+      if(Number(qtdL375)>0) itensVenda.push({ produto: 'limoncello', tamanho: 375, quantidade: Number(qtdL375), preco: Number(precoUnit375), lote_id: loteL375 || null })
+      if(Number(qtdA750)>0) itensVenda.push({ produto: 'arancello', tamanho: 750, quantidade: Number(qtdA750), preco: Number(precoUnit750), lote_id: loteA750 || null })
+      if(Number(qtdA375)>0) itensVenda.push({ produto: 'arancello', tamanho: 375, quantidade: Number(qtdA375), preco: Number(precoUnit375), lote_id: loteA375 || null })
 
-      // 3. Itens e Baixa Lote
-      const processarItem = async (prod: string, tam: number, qtdStr: string | number, preco: number, loteId: string) => {
-        const qtd = Number(qtdStr) || 0
-        if (qtd <= 0) return
-        
-        await supabase.from('itens_venda').insert({ venda_id: venda.id, produto: prod, tamanho: tam, quantidade: qtd, preco_unitario: preco, lote_id: loteId || null })
-        
-        if (loteId) {
-            const coluna = tam === 750 ? 'estoque_750' : 'estoque_375'
-            await supabase.rpc('baixar_estoque_lote', { p_lote_id: loteId, p_coluna: coluna, p_qtd: qtd })
-        }
+      const embalagens = {
+          sacola: { id: estoqueEmbalagem.idSacola, qtd: qSacola },
+          caixa: { id: estoqueEmbalagem.idCaixa, qtd: qCaixa },
+          veludo: { id: estoqueEmbalagem.idVeludo, qtd: qVeludo }
       }
 
-      await processarItem('limoncello', 750, qtdL750, Number(precoUnit750), loteL750)
-      await processarItem('limoncello', 375, qtdL375, Number(precoUnit375), loteL375)
-      await processarItem('arancello', 750, qtdA750, Number(precoUnit750), loteA750)
-      await processarItem('arancello', 375, qtdA375, Number(precoUnit375), loteA375)
+      // 3. CHAMADA ATÔMICA (RPC)
+      const { error } = await supabase.rpc('registrar_venda_completa', {
+          p_cliente_id: finalClienteId,
+          p_valor_total: Number(valorTotal),
+          p_observacao: observacao,
+          p_pago: pago,
+          p_itens: itensVenda,
+          p_embalagens: embalagens
+      })
 
-      // 4. Baixa de Embalagem (ATUALIZADO)
-      if (qSacola > 0 && estoqueEmbalagem.idSacola) {
-          await supabase.from('Insumo').update({ quantidade_atual: estoqueEmbalagem.sacola - qSacola }).eq('id', estoqueEmbalagem.idSacola)
-          await supabase.from('MovimentacaoInsumo').insert({ insumo_id: estoqueEmbalagem.idSacola, tipo: 'uso', quantidade: qSacola, observacao: `Venda #${venda.id}` })
-      }
-      if (qCaixa > 0 && estoqueEmbalagem.idCaixa) {
-          await supabase.from('Insumo').update({ quantidade_atual: estoqueEmbalagem.caixa - qCaixa }).eq('id', estoqueEmbalagem.idCaixa)
-          await supabase.from('MovimentacaoInsumo').insert({ insumo_id: estoqueEmbalagem.idCaixa, tipo: 'uso', quantidade: qCaixa, observacao: `Venda #${venda.id}` })
-      }
-      if (qVeludo > 0 && estoqueEmbalagem.idVeludo) {
-          await supabase.from('Insumo').update({ quantidade_atual: estoqueEmbalagem.veludo - qVeludo }).eq('id', estoqueEmbalagem.idVeludo)
-          await supabase.from('MovimentacaoInsumo').insert({ insumo_id: estoqueEmbalagem.idVeludo, tipo: 'uso', quantidade: qVeludo, observacao: `Venda #${venda.id}` })
-      }
+      if (error) throw error
 
       alert("Venda realizada com sucesso!")
       router.refresh()
       onClose()
       
-      // Limpeza
+      // Limpeza (Mantida)
       setNome(''); setTelefone(''); setCpfCnpj(''); setClienteIdSelecionado(null);
       setQtdL750(''); setQtdL375(''); setQtdA750(''); setQtdA375('');
       setLoteL750(''); setLoteL375(''); setLoteA750(''); setLoteA375('');

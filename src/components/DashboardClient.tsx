@@ -18,7 +18,6 @@ export function DashboardClient({ lotes, estoque }: Props) {
     faturamento: 0,
     garrafasVendidas: 0,
     producao: { total: 0, limoncello750: 0, limoncello375: 0, arancello750: 0, arancello375: 0 },
-    // NOVO: Detalhamento de Vendas
     vendas: { total: 0, limoncello750: 0, limoncello375: 0, arancello750: 0, arancello375: 0 }
   })
 
@@ -28,7 +27,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
 
   const fetchIndicadores = async () => {
     try {
-        // 1. Produção (Baseado nos Lotes)
+        // 1. Produção (Baseado nos Lotes - Mantido local pois 'lotes' já vem na prop)
         let p_l750 = 0, p_l375 = 0, p_a750 = 0, p_a375 = 0
         lotes.forEach(l => {
           if (l.produto === 'limoncello') { p_l750 += (l.qtd_garrafas_750 || 0); p_l375 += (l.qtd_garrafas_375 || 0) } 
@@ -36,42 +35,33 @@ export function DashboardClient({ lotes, estoque }: Props) {
         })
         const prodTotal = p_l750 + p_l375 + p_a750 + p_a375
         
-        // 2. Vendas (Baseado nos Itens Vendidos)
-        const { data: vendas } = await supabase.from('vendas').select('valor_total')
-        const { data: itens } = await supabase.from('itens_venda').select('produto, tamanho, quantidade')
-
-        const totalFaturado = vendas?.reduce((acc, v) => acc + (v.valor_total || 0), 0) || 0
+        // 2. Vendas (AGORA VIA RPC - MUITO MAIS RÁPIDO)
+        const { data: stats, error } = await supabase.rpc('get_vendas_stats')
         
-        let v_l750 = 0, v_l375 = 0, v_a750 = 0, v_a375 = 0
-        let vendasTotal = 0
+        if (error) throw error
 
-        itens?.forEach(item => {
-            const qtd = item.quantidade || 0
-            vendasTotal += qtd
-            if (item.produto === 'limoncello') {
-                if (item.tamanho === 750) v_l750 += qtd
-                else if (item.tamanho === 375) v_l375 += qtd
-            } else if (item.produto === 'arancello') {
-                if (item.tamanho === 750) v_a750 += qtd
-                else if (item.tamanho === 375) v_a375 += qtd
-            }
-        })
+        // O RPC retorna um JSON, vamos parsear
+        const detalhe = stats.detalhe || {}
+        const v_l750 = Number(detalhe['limoncello_750'] || 0)
+        const v_l375 = Number(detalhe['limoncello_375'] || 0)
+        const v_a750 = Number(detalhe['arancello_750'] || 0)
+        const v_a375 = Number(detalhe['arancello_375'] || 0)
 
         setIndicadores({
-            faturamento: totalFaturado,
-            garrafasVendidas: vendasTotal,
+            faturamento: Number(stats.faturamento || 0),
+            garrafasVendidas: Number(stats.garrafasVendidas || 0),
             producao: { total: prodTotal, limoncello750: p_l750, limoncello375: p_l375, arancello750: p_a750, arancello375: p_a375 },
-            vendas: { total: vendasTotal, limoncello750: v_l750, limoncello375: v_l375, arancello750: v_a750, arancello375: v_a375 }
+            vendas: { total: Number(stats.garrafasVendidas || 0), limoncello750: v_l750, limoncello375: v_l375, arancello750: v_a750, arancello375: v_a375 }
         })
     } catch (err) { console.error(err) }
   }
 
+  // ... (Resto do código getQtd, abrirDetalhes, StockRow e JSX igual ao anterior) ...
   const getQtd = (slug: string) => {
     const item = estoque.find(i => i.slug === slug)
     return item ? item.quantidade : 0
   }
 
-  // Função para abrir detalhes
   const abrirDetalhes = (produto: string, tamanho: number) => {
     const lotesComEstoque = lotes.filter(l => {
         const qtdLote = tamanho === 750 ? l.estoque_750 : l.estoque_375
@@ -117,7 +107,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </header>
 
-      {/* 1. TANQUES */}
+      {/* ... (Seções TANQUES e PRATELEIRA IGUAIS AO ANTERIOR) ... */}
       <section className="mb-10">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Em Maturação (Tanques)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -136,7 +126,6 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* 2. PRATELEIRA */}
       <section className="mb-12">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span>Pronta Entrega (Estoque Atual)</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -164,19 +153,17 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* 3. ESTATÍSTICAS */}
+      {/* 3. ESTATÍSTICAS (MANTIDO O LAYOUT NOVO, MAS COM DADOS DO RPC) */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estatísticas Gerais</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           
-          {/* Faturamento (Simples) */}
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-32">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Faturamento Total</span>
               <div className="text-3xl font-black text-green-600 tracking-tight">R$ {indicadores.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
               <div className="text-[10px] text-gray-400 font-bold bg-green-50 w-fit px-2 py-1 rounded text-green-700">Receita Bruta</div>
           </div>
 
-          {/* Vendas (Detalhadas - NOVO LAYOUT) */}
           <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-3 min-h-32">
               <div className="flex justify-between items-start">
                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Vendas Realizadas</span>
@@ -202,7 +189,6 @@ export function DashboardClient({ lotes, estoque }: Props) {
               </div>
           </div>
 
-          {/* Produção (Detalhadas) */}
           <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-3 min-h-32">
               <div className="flex justify-between items-start">
                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Produção Total</span>
@@ -231,7 +217,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* MODAL DETALHE ESTOQUE */}
+      {/* ... (MODAL DETALHE e MODAL VENDA MANTIDOS) ... */}
       {detailOpen && detailData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
