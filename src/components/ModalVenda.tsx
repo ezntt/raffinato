@@ -16,7 +16,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   // Dados do Cliente
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
-  // ALTERAÇÃO 1: Tipo padrão PF e tipagem simplificada
   const [tipoCliente, setTipoCliente] = useState('PF') 
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [clienteIdSelecionado, setClienteIdSelecionado] = useState<string | null>(null)
@@ -33,18 +32,20 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [precoUnit375, setPrecoUnit375] = useState<number | string>(PRECO_PADRAO.GARRAFA_375)
   const [valorTotal, setValorTotal] = useState<number | string>('')
 
-  // Quantidades e Lotes (MANTIDO ORIGINAL)
+  // Quantidades
   const [qtdL750, setQtdL750] = useState<number | string>('')
   const [qtdL375, setQtdL375] = useState<number | string>('')
   const [qtdA750, setQtdA750] = useState<number | string>('')
   const [qtdA375, setQtdA375] = useState<number | string>('')
+
+  // Lotes
   const [lotesDisponiveis, setLotesDisponiveis] = useState<any[]>([])
   const [loteL750, setLoteL750] = useState<string>('')
   const [loteL375, setLoteL375] = useState<string>('')
   const [loteA750, setLoteA750] = useState<string>('')
   const [loteA375, setLoteA375] = useState<string>('')
 
-  // === MÁSCARAS ===
+  // Mask de telefone
   const formatarTelefone = (v: string) => {
     let val = v.replace(/\D/g, "").substring(0, 11)
     if (val.length > 10) return val.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
@@ -53,7 +54,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     return val ? val.replace(/^(\d*)/, "($1") : ""
   }
 
-  // ALTERAÇÃO 2: Máscaras separadas para PF e PJ
+  // Mask de PF e PJ
   const handleDocChange = (v: string) => {
     const limpo = v.replace(/\D/g, "")
     
@@ -109,7 +110,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const selecionarCliente = (cliente: any) => {
     setNome(cliente.nome)
     setTelefone(cliente.telefone || '')
-    // ALTERAÇÃO 3: Normaliza o tipo vindo do banco ou define padrão
     setTipoCliente(cliente.tipo || 'PF')
     setCpfCnpj(cliente.cpf_cnpj || '')
     setClienteIdSelecionado(cliente.id)

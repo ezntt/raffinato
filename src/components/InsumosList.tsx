@@ -80,8 +80,8 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         {/* Abas */}
         <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
-            <button onClick={() => setActiveTab('estoque')} className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Estoque Atual</button>
-            <button onClick={() => setActiveTab('historico')} className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Histórico Compras</button>
+            <button onClick={() => setActiveTab('estoque')} className={`flex-1 cursor-pointer md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Estoque Atual</button>
+            <button onClick={() => setActiveTab('historico')} className={`flex-1 cursor-pointer md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Histórico Compras</button>
         </div>
 
         {/* Botões de Ação */}

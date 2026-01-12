@@ -52,7 +52,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
           {/* Cards... */}
           <div className="flex-1 md:flex-none bg-red-50 px-6 py-4 rounded-2xl border border-red-100 text-right">
             <span className="text-xs uppercase font-bold text-red-400 block">A Receber</span>
-            <span className="text-xl font-black text-red-900">R$ {totalPendente.toFixed(2)}</span>
+            <span className="text-3xl font-black text-red-900">R$ {totalPendente.toFixed(2)}</span>
           </div>
           <div className="flex-1 md:flex-none bg-green-50 px-6 py-4 rounded-2xl border border-green-100 text-right">
             <span className="text-xs uppercase font-bold text-green-600 block">Faturamento</span>
@@ -63,9 +63,9 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
 
       {/* === BARRA DE FILTROS === */}
       <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
-        <button onClick={() => setFiltro('todos')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filtro === 'todos' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Todos</button>
-        <button onClick={() => setFiltro('pagos')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filtro === 'pagos' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-green-600'}`}>Pagos</button>
-        <button onClick={() => setFiltro('pendentes')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filtro === 'pendentes' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Pendentes</button>
+        <button onClick={() => setFiltro('todos')} className={`px-4 cursor-pointer py-2 rounded-lg text-sm font-bold transition-all ${filtro === 'todos' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Todos</button>
+        <button onClick={() => setFiltro('pagos')} className={`px-4 cursor-pointer py-2 rounded-lg text-sm font-bold transition-all ${filtro === 'pagos' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-green-600'}`}>Pagos</button>
+        <button onClick={() => setFiltro('pendentes')} className={`px-4 py-2 cursor-pointer rounded-lg text-sm font-bold transition-all ${filtro === 'pendentes' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Pendentes</button>
       </div>
 
       {/* === LISTA === */}
