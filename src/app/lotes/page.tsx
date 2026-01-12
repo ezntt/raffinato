@@ -16,7 +16,7 @@ export default async function LotesPage() {
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto mt-12 md:mt-0">
       <header className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Lotes e Engarrafamento</h1>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Maceração e Maturação</h1>
       </header>
 
       {/* Passamos os dados para o Client Component */}

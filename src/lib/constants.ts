@@ -29,9 +29,13 @@ export const NOME_INSUMO = {
     ALCOOL: 'Álcool de Cereais', 
     ACUCAR: 'Açúcar Refinado',
     
-    BASE_LIMONCELLO: 'Base Alcoólica Limoncello',
-    BASE_ARANCELLO: 'Base Alcoólica Arancello',
+    // Bases - Etapa 1: Maceração (Com as cascas)
+    BASE_LIMONCELLO_CASCA: 'Base Limoncello (Com Casca)',
+    BASE_ARANCELLO_CASCA: 'Base Arancello (Com Casca)',
 
+    // Bases - Etapa 2: Filtrada (Pronta para uso no licor)
+    BASE_LIMONCELLO_FILTRADA: 'Base Limoncello (Filtrada)', 
+    BASE_ARANCELLO_FILTRADA: 'Base Arancello (Filtrada)',
     SACOLA: 'Sacola',
     CAIXA_DE_PAPELAO: 'Caixa de Papelão',
     EMBALAGEM_VELUDO: 'Embalagem Veludo',

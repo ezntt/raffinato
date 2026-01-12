@@ -1,16 +1,14 @@
-// src/components/InsumosList.tsx
-
 "use client"
 import { useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ComprasList } from './ComprasList'
-import { ModalMaceracao } from './ModalMaceracao'
+// ModalMaceracao removido daqui
 
 // Definição das Categorias Visuais
 const CATEGORIAS_VISUAIS = {
   MATERIA_PRIMA: { titulo: 'Matéria-Prima', icone: '🍋', cor: 'bg-green-100 text-green-800 border-green-200' },
-  BASES: { titulo: 'Bases em Infusão', icone: '⚗️', cor: 'bg-purple-100 text-purple-800 border-purple-200' },
+  // BASES removido daqui pois irá para LotesList
   VIDROS: { titulo: 'Garrafas & Vidros', icone: '🍾', cor: 'bg-blue-100 text-blue-800 border-blue-200' },
   ROTULOS: { titulo: 'Rótulos', icone: '🏷️', cor: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
   FECHAMENTO: { titulo: 'Tampas & Lacres', icone: '🔒', cor: 'bg-gray-100 text-gray-800 border-gray-200' },
@@ -21,9 +19,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque')
   
-  // Estados de Compra e Modal
   const [modalOpen, setModalOpen] = useState(false)
-  const [maceracaoOpen, setMaceracaoOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   
   // Form States
@@ -36,18 +32,22 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
 
   const itemSelecionado = insumos.find(i => i.id === selectedId)
 
-  // --- LÓGICA DE CATEGORIZAÇÃO INTELIGENTE ---
+  // --- LÓGICA DE CATEGORIZAÇÃO ---
   const insumosAgrupados = useMemo(() => {
+    // Removemos BASES do grupo visível
     const grupos: Record<string, any[]> = {
-      MATERIA_PRIMA: [], BASES: [], VIDROS: [], ROTULOS: [], FECHAMENTO: [], EXPEDICAO: []
+      MATERIA_PRIMA: [], VIDROS: [], ROTULOS: [], FECHAMENTO: [], EXPEDICAO: []
     }
 
     insumos.forEach(item => {
       const nome = item.nome.toLowerCase()
       
+      // Se for Base, ignoramos aqui (será mostrado em Lotes)
       if (nome.includes('base')) {
-        grupos.BASES.push(item)
-      } else if (nome.includes('álcool') || nome.includes('alcool') || nome.includes('açúcar') || nome.includes('acucar') || nome.includes('limão') || nome.includes('laranja')) {
+        return 
+      }
+
+      if (nome.includes('álcool') || nome.includes('alcool') || nome.includes('açúcar') || nome.includes('acucar') || nome.includes('limão') || nome.includes('laranja')) {
         grupos.MATERIA_PRIMA.push(item)
       } else if (nome.includes('garrafa')) {
         grupos.VIDROS.push(item)
@@ -113,7 +113,6 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
       )
   }
 
-  // Componente de Seção
   const SecaoCategoria = ({ chave, items }: { chave: string, items: any[] }) => {
     if (items.length === 0) return null
     // @ts-ignore
@@ -143,12 +142,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
 
         {/* Botões de Ação */}
         <div className="flex gap-2 w-full md:w-auto">
-            <button 
-                onClick={() => setMaceracaoOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer flex-1 md:flex-none justify-center"
-            >
-                <span>🧪 Maceração</span>
-            </button>
+            {/* Botão de Maceração Removido daqui */}
             <button 
                 onClick={() => setModalOpen(true)}
                 className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer flex-1 md:flex-none justify-center"
@@ -160,7 +154,6 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
 
       {activeTab === 'estoque' ? (
           <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Renderiza as seções dinamicamente */}
             {Object.keys(insumosAgrupados).map(chave => (
                 <SecaoCategoria 
                     key={chave} 
@@ -186,7 +179,6 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Insumo</label>
                         <select required value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 font-bold cursor-pointer">
                             <option value="">Selecione...</option>
-                            {/* Select também organizado por grupos */}
                             {Object.keys(insumosAgrupados).map(chave => {
                                 const items = insumosAgrupados[chave as keyof typeof insumosAgrupados]
                                 // @ts-ignore
@@ -200,6 +192,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                             })}
                         </select>
                     </div>
+                    {/* Campos de Input restantes mantidos iguais */}
                     <div className="flex gap-4">
                         <div className="flex-1">
                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Qtd {itemSelecionado ? `(${itemSelecionado.unidade})` : ''}</label>
@@ -231,9 +224,6 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
             </div>
         </div>
       )}
-
-      {/* Modal Maceração */}
-      <ModalMaceracao isOpen={maceracaoOpen} onClose={() => setMaceracaoOpen(false)} />
     </>
   )
 }
