@@ -2,13 +2,45 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase' // Importa o cliente para fazer logout
+import { supabase } from '@/lib/supabase'
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter() // Para redirecionar após sair
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
 
+  // === LÓGICA DE SWIPE (ARRASTAR) ===
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Distância mínima para considerar um swipe (em px)
+  const minSwipeDistance = 50 
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe && isOpen) {
+        setIsOpen(false) // Fecha ao arrastar para esquerda
+    }
+    if (isRightSwipe && !isOpen) {
+        setIsOpen(true) // Abre ao arrastar para direita
+    }
+  }
+
+  // Helpers
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(`${path}/`)
       ? "bg-yellow-50 text-yellow-700 border-r-4 border-yellow-500" 
@@ -17,16 +49,25 @@ export function Sidebar() {
 
   const closeMenu = () => setIsOpen(false)
 
-  // === FUNÇÃO DE LOGOUT ===
   const handleLogout = async () => {
-    await supabase.auth.signOut() // Apaga o cookie
-    router.push('/login') // Manda para a tela de login
-    router.refresh() // Limpa o cache do navegador
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
   }
 
   return (
     <>
-      {/* Botão Mobile */}
+      {/* ZONA DE GATILHO INVISÍVEL (Para abrir arrastando da esquerda) */}
+      {!isOpen && (
+        <div 
+            className="md:hidden fixed top-0 left-0 bottom-0 w-8 z-30"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        />
+      )}
+
+      {/* Botão Mobile (Mantido como fallback visual) */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="md:hidden fixed top-4 right-4 z-50 bg-white p-2 rounded-lg shadow-md border border-gray-200 text-yellow-600"
@@ -38,7 +79,7 @@ export function Sidebar() {
         )}
       </button>
 
-      {/* Overlay Mobile */}
+      {/* Overlay Mobile (Fecha ao clicar) */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
@@ -46,11 +87,17 @@ export function Sidebar() {
         />
       )}
 
-      <aside className={`
-        fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out
-        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-        md:translate-x-0 
-      `}>
+      <aside 
+        // Adicionamos os eventos de touch na própria Sidebar para poder fechar arrastando
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className={`
+            fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out
+            ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+            md:translate-x-0 
+        `}
+      >
 
         <div className="p-8 border-b border-gray-100">
           <h1 className="text-2xl font-black text-yellow-600 tracking-tight">raffinato 🍋</h1>
@@ -91,28 +138,12 @@ export function Sidebar() {
             onClick={closeMenu} 
             className={`px-8 py-4 flex items-center gap-3 font-bold transition-all ${isActive('/configuracoes')}`}
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="20" 
-              height="20" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             Configurações
           </Link>
         </nav>
 
-        {/* Rodapé da Sidebar COM LOGOUT */}
         <div className="p-6 border-t border-gray-100 bg-gray-50 space-y-4">
-          
-          {/* Info Usuário */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-yellow-200 flex items-center justify-center font-bold text-yellow-700">R</div>
             <div>
@@ -121,7 +152,6 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Botão Sair */}
           <button 
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 text-red-600 hover:text-red-700 cursor-pointer hover:bg-red-50 p-2 rounded-lg transition-colors font-bold text-sm border border-transparent hover:border-red-100"
