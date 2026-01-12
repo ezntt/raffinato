@@ -12,13 +12,25 @@ interface Props {
 export function ModalVenda({ isOpen, onClose }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [buscandoDados, setBuscandoDados] = useState(false)
 
-  // Dados do Cliente
+  // Dados do Cliente (Visíveis)
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [tipoCliente, setTipoCliente] = useState('PF') 
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [clienteIdSelecionado, setClienteIdSelecionado] = useState<string | null>(null)
+  
+  // Dados do Cliente (Invisíveis/Background para salvar no banco)
+  const [dadosExtras, setDadosExtras] = useState({
+      cep: '',
+      endereco: '',
+      numero: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      complemento: ''
+  })
   
   // Autocomplete
   const [listaClientes, setListaClientes] = useState<any[]>([])
@@ -45,7 +57,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const [loteA750, setLoteA750] = useState<string>('')
   const [loteA375, setLoteA375] = useState<string>('')
 
-  // Embalagens de Expedição (ATUALIZADO)
+  // Embalagens
   const [qtdSacolas, setQtdSacolas] = useState<number | string>('')
   const [qtdCaixas, setQtdCaixas] = useState<number | string>('')
   const [qtdVeludo, setQtdVeludo] = useState<number | string>('')
@@ -64,9 +76,10 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     return val ? val.replace(/^(\d*)/, "($1") : ""
   }
 
-  // Mask de PF e PJ
-  const handleDocChange = (v: string) => {
+  // Mask de PF e PJ + BUSCA CNPJ
+  const handleDocChange = async (v: string) => {
     const limpo = v.replace(/\D/g, "")
+    
     if (tipoCliente === 'PF') {
         let cpf = limpo.substring(0, 11)
         cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
@@ -74,12 +87,42 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         cpf = cpf.replace(/(\d{3})(\d{1,2})$/, "$1-$2")
         setCpfCnpj(cpf)
     } else {
+        // Formata CNPJ
         let cnpj = limpo.substring(0, 14)
         cnpj = cnpj.replace(/^(\d{2})(\d)/, "$1.$2")
         cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
         cnpj = cnpj.replace(/\.(\d{3})(\d)/, ".$1/$2")
         cnpj = cnpj.replace(/(\d{4})(\d)/, "-$1")
         setCpfCnpj(cnpj)
+
+        // BUSCA AUTOMÁTICA CNPJ
+        if (limpo.length === 14) {
+            setBuscandoDados(true)
+            try {
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`)
+                const data = await res.json()
+                
+                if (!data.message) { 
+                    // 1. Preenche Nome visível
+                    if(!nome) setNome(data.nome_fantasia || data.razao_social || '')
+                    
+                    // 2. Guarda Endereço "Escondido" para salvar no banco
+                    setDadosExtras({
+                        cep: data.cep || '',
+                        endereco: data.logradouro || '',
+                        numero: data.numero || '',
+                        bairro: data.bairro || '',
+                        cidade: data.municipio || '',
+                        estado: data.uf || '',
+                        complemento: data.complemento || ''
+                    })
+                }
+            } catch (error) {
+                console.error("Erro busca CNPJ", error)
+            } finally {
+                setBuscandoDados(false)
+            }
+        }
     }
   }
 
@@ -87,15 +130,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
-        // 1. Busca Lotes
         const { data: lotes } = await supabase.from('Lote').select('id, produto, estoque_750, estoque_375').or('estoque_750.gt.0,estoque_375.gt.0')
         if (lotes) setLotesDisponiveis(lotes)
 
-        // 2. Busca Clientes
         const { data: clientes } = await supabase.from('Cliente').select('*').order('nome')
         if (clientes) setListaClientes(clientes)
 
-        // 3. Busca Estoque de Embalagens (ATUALIZADO)
         const { data: insumos } = await supabase.from('Insumo').select('id, nome, quantidade_atual').in('nome', [NOME_INSUMO.SACOLA, NOME_INSUMO.CAIXA_DE_PAPELAO, NOME_INSUMO.EMBALAGEM_VELUDO])
         if (insumos) {
             const sacola = insumos.find(i => i.nome === NOME_INSUMO.SACOLA)
@@ -118,6 +158,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         setQtdSacolas('')
         setQtdCaixas('')
         setQtdVeludo('')
+        setDadosExtras({ cep: '', endereco: '', numero: '', bairro: '', cidade: '', estado: '', complemento: '' })
       }
       fetchData()
     }
@@ -143,6 +184,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     setCpfCnpj(cliente.cpf_cnpj || '')
     setClienteIdSelecionado(cliente.id)
     setMostrarSugestoes(false)
+    // Se o cliente já existe, não precisamos setar dadosExtras, pois não vamos dar update no endereço dele aqui
   }
 
   const getOpcoesLote = (prod: string, tam: number) => {
@@ -192,7 +234,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     const qCaixa = Number(qtdCaixas) || 0
     const qVeludo = Number(qtdVeludo) || 0
 
-    // Validações de embalagem (Mantidas)
     if (qSacola > estoqueEmbalagem.sacola) if(!confirm(`Estoque de Sacolas insuficiente (${estoqueEmbalagem.sacola}). Continuar?`)) return
     if (qCaixa > estoqueEmbalagem.caixa) if(!confirm(`Estoque de Caixas insuficiente (${estoqueEmbalagem.caixa}). Continuar?`)) return
     if (qVeludo > estoqueEmbalagem.veludo) if(!confirm(`Estoque de Veludo insuficiente (${estoqueEmbalagem.veludo}). Continuar?`)) return
@@ -200,20 +241,35 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     setLoading(true)
 
     try {
-      // 1. Cliente (Lógica de criar/atualizar cliente mantida, pois é pré-requisito)
+      // 1. Cliente (Lógica atualizada para salvar Endereço)
       let finalClienteId = clienteIdSelecionado
       if (!finalClienteId) {
         const { data: existente } = await supabase.from('Cliente').select('id').eq('telefone', telefone).single()
         if (existente) {
             finalClienteId = existente.id
+            // Atualiza CPF/CNPJ se faltar
             if(cpfCnpj) await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj, tipo: tipoCliente }).eq('id', finalClienteId)
         } else {
-            const { data: novo } = await supabase.from('Cliente').insert({ nome, telefone, tipo: tipoCliente, cpf_cnpj: cpfCnpj }).select().single()
+            // CRIA NOVO CLIENTE COM DADOS EXTRAS DO CNPJ (SE HOUVER)
+            const { data: novo } = await supabase.from('Cliente').insert({ 
+                nome, 
+                telefone, 
+                tipo: tipoCliente, 
+                cpf_cnpj: cpfCnpj,
+                // Aqui entram os dados invisíveis capturados do CNPJ
+                cep: dadosExtras.cep,
+                endereco: dadosExtras.endereco,
+                numero: dadosExtras.numero,
+                bairro: dadosExtras.bairro,
+                cidade: dadosExtras.cidade,
+                estado: dadosExtras.estado,
+                complemento: dadosExtras.complemento
+            }).select().single()
             finalClienteId = novo.id
         }
       }
 
-      // 2. Montar Payload da Venda (JSON)
+      // 2. Montar Payload
       const itensVenda = []
       if(Number(qtdL750)>0) itensVenda.push({ produto: 'limoncello', tamanho: 750, quantidade: Number(qtdL750), preco: Number(precoUnit750), lote_id: loteL750 || null })
       if(Number(qtdL375)>0) itensVenda.push({ produto: 'limoncello', tamanho: 375, quantidade: Number(qtdL375), preco: Number(precoUnit375), lote_id: loteL375 || null })
@@ -226,7 +282,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
           veludo: { id: estoqueEmbalagem.idVeludo, qtd: qVeludo }
       }
 
-      // 3. CHAMADA ATÔMICA (RPC)
+      // 3. RPC
       const { error } = await supabase.rpc('registrar_venda_completa', {
           p_cliente_id: finalClienteId,
           p_valor_total: Number(valorTotal),
@@ -242,11 +298,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       router.refresh()
       onClose()
       
-      // Limpeza (Mantida)
+      // Limpeza
       setNome(''); setTelefone(''); setCpfCnpj(''); setClienteIdSelecionado(null);
       setQtdL750(''); setQtdL375(''); setQtdA750(''); setQtdA375('');
       setLoteL750(''); setLoteL375(''); setLoteA750(''); setLoteA375('');
       setQtdSacolas(''); setQtdCaixas(''); setQtdVeludo('');
+      setDadosExtras({ cep: '', endereco: '', numero: '', bairro: '', cidade: '', estado: '', complemento: '' })
 
     } catch (error: any) {
       alert("Erro: " + error.message)
@@ -317,13 +374,21 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                         </div>
                         
                         <div>
-                            <input 
-                                placeholder={tipoCliente === 'PF' ? "CPF (Opcional)" : "CNPJ (Opcional)"}
-                                value={cpfCnpj} 
-                                onChange={e => handleDocChange(e.target.value)} 
-                                maxLength={tipoCliente === 'PF' ? 14 : 18}
-                                className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-mono placeholder-gray-400" 
-                            />
+                            {/* CAMPO DE CNPJ COM FEEDBACK DE BUSCA */}
+                            <div className="relative">
+                                <input 
+                                    placeholder={tipoCliente === 'PF' ? "CPF (Opcional)" : "CNPJ (Busca Auto)"}
+                                    value={cpfCnpj} 
+                                    onChange={e => handleDocChange(e.target.value)} 
+                                    maxLength={tipoCliente === 'PF' ? 14 : 18}
+                                    className="w-full p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-mono placeholder-gray-400" 
+                                />
+                                {buscandoDados && (
+                                    <span className="absolute right-3 top-3.5 text-xs text-blue-500 font-bold animate-pulse">
+                                        buscando...
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -352,7 +417,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                         </div>
                     </div>
 
-                    {/* SEÇÃO DE EMBALAGEM */}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 grid grid-cols-3 gap-2">
                         <div>
                             <div className="flex justify-between mb-1">
