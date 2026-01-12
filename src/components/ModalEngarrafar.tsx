@@ -160,8 +160,8 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
         <form onSubmit={handleConfirm} className="space-y-5">
           
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => setTamanho(750)} className={`p-3 rounded-xl border-2 font-bold transition-all ${tamanho === 750 ? 'border-black bg-black text-white' : 'border-gray-100 bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>Garrafa 750ml</button>
-            <button type="button" onClick={() => setTamanho(375)} className={`p-3 rounded-xl border-2 font-bold transition-all ${tamanho === 375 ? 'border-black bg-black text-white' : 'border-gray-100 bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>Pequena 375ml</button>
+            <button type="button" onClick={() => setTamanho(750)} className={`p-3 cursor-pointer rounded-xl border-2 font-bold transition-all ${tamanho === 750 ? 'border-black bg-black text-white' : 'border-gray-100 bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>Garrafa 750ml</button>
+            <button type="button" onClick={() => setTamanho(375)} className={`p-3 cursor-pointer rounded-xl border-2 font-bold transition-all ${tamanho === 375 ? 'border-black bg-black text-white' : 'border-gray-100 bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>Pequena 375ml</button>
           </div>
 
           <div>
@@ -193,7 +193,7 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
           <button 
             type="submit" 
             disabled={loading || nQtd <= 0 || faltaLiquido}
-            className={`w-full text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed
+            className={`w-full text-white font-bold py-4 rounded-xl cursor-pointer text-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed
                 ${faltaInsumo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'}
             `}
           >

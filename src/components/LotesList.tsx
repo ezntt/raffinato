@@ -38,9 +38,8 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
 
   const excluirLote = async (id: string) => {
     const confirmacao = window.confirm(
-        `⛔ PERIGO: Deseja EXCLUIR o lote ${id}?\n\n` +
-        `Isso irá reverter a criação, devolvendo o Álcool e o Açúcar para o estoque.\n` +
-        `Essa ação não pode ser desfeita.`
+        `Deseja EXCLUIR o lote ${id}?\n\n` +
+        `Isso irá reverter a criação, devolvendo a Base e o Açúcar para o estoque.\n`
     )
     
     if (!confirmacao) return

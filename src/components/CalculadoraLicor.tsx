@@ -25,7 +25,6 @@ export function CalculadoraLicor() {
     try {
         const { data } = await supabase.from('Insumo').select('id, nome, quantidade_atual')
         if (data) {
-            // Busca exata usando as constantes para não ter erro
             const acucar = data.find(i => i.nome === NOME_INSUMO.ACUCAR)
             const baseL = data.find(i => i.nome === NOME_INSUMO.BASE_LIMONCELLO)
             const baseA = data.find(i => i.nome === NOME_INSUMO.BASE_ARANCELLO)
@@ -63,7 +62,6 @@ export function CalculadoraLicor() {
     if (!loteManual.trim()) return alert("Digite o NÚMERO DO LOTE.")
     if (volumeTotalLitros <= 0) return alert("Insira uma quantidade válida.")
 
-    // VALIDAÇÃO CRÍTICA: Se não achou os IDs no banco, avisa e para.
     if (!estAcucar) return alert(`ERRO: Item '${NOME_INSUMO.ACUCAR}' não encontrado no estoque.`)
     if (!estBaseSelecionada) return alert(`ERRO: Item Base Alcoólica não encontrado no estoque.`)
 
@@ -76,44 +74,28 @@ export function CalculadoraLicor() {
     setLoading(true)
 
     try {
-        // 1. Atualiza ou Cria o Lote
-        const { data: loteExistente } = await supabase.from('Lote').select('*').eq('id', loteManual).maybeSingle()
-        const hoje = new Date()
-        const novoItemHistorico = { data: hoje.toISOString(), volume: volumeTotalLitros }
+        // CHAMADA ÚNICA PARA A NOVA PROCEDURE
+        // Ela cria/atualiza o lote E desconta os insumos atomicamente
+        const { error } = await supabase.rpc('produzir_licor', {
+            p_lote_id: loteManual,
+            p_produto: tipo,
+            p_volume_novo: volumeTotalLitros,
+            p_id_acucar: estAcucar.id,
+            p_qtd_acucar: kgAcucarNecessarios,
+            p_id_base: estBaseSelecionada.id,
+            p_qtd_base: volBaseNecessariaL
+        })
 
-        if (loteExistente) {
-            if (loteExistente.produto !== tipo) {
-                setLoading(false)
-                return alert(`ERRO: O Lote ${loteManual} já existe e é de ${loteExistente.produto}.`)
-            }
-            
-            const historicoAtual = loteExistente.historico_producao || []
-            await supabase.from('Lote').update({ 
-                volume_litros: (loteExistente.volume_litros || 0) + volumeTotalLitros,
-                volume_atual: (loteExistente.volume_atual || 0) + volumeTotalLitros,
-                historico_producao: [...historicoAtual, novoItemHistorico],
-                status: 'em_infusao', 
-                data_previsao: new Date(hoje.setDate(hoje.getDate() + 10))
-            }).eq('id', loteManual)
+        if (error) throw error
 
-        } else {
-            const previsao = new Date()
-            previsao.setDate(previsao.getDate() + 10)
-            await supabase.from('Lote').insert({
-                id: loteManual, produto: tipo, volume_litros: volumeTotalLitros, volume_atual: volumeTotalLitros,
-                data_inicio: new Date(), data_previsao: previsao, status: 'em_infusao',
-                qtd_garrafas_750: 0, qtd_garrafas_375: 0, historico_producao: [novoItemHistorico]
-            })
-        }
+        // Log visual para o usuário (Opcional, mas bom manter)
+        await supabase.from('Logs').insert({ 
+            categoria: 'PRODUCAO', 
+            acao: 'PRODUCAO_LOTE', 
+            descricao: `Lote ${loteManual}: +${volumeTotalLitros}L ${tipo}` 
+        })
 
-        // 2. Baixa Estoque (Agora garantido que a função SQL existe)
-        // Usa IDs validados anteriormente
-        await supabase.rpc('decrement_estoque', { p_id: estAcucar.id, p_qtd: kgAcucarNecessarios })
-        await supabase.rpc('decrement_estoque', { p_id: estBaseSelecionada.id, p_qtd: volBaseNecessariaL })
-        
-        await supabase.from('Logs').insert({ categoria: 'PRODUCAO', acao: 'PRODUCAO_LOTE', descricao: `Lote ${loteManual}: +${volumeTotalLitros}L ${tipo}` })
-
-        alert(`Lote ${loteManual} registrado e insumos descontados!`)
+        alert(`Sucesso! Lote ${loteManual} registrado e insumos descontados!`)
         router.push('/lotes')
         
     } catch (error: any) {

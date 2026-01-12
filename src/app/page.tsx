@@ -6,26 +6,24 @@ export const revalidate = 0
 export default async function Home() {
   const supabase = await createClient()
 
-  // 1. Busca Lotes (Licor)
+  // 1. Busca Lotes (Necessário para ver o volume nos TANQUES)
   const { data: lotes } = await supabase
     .from('Lote')
     .select('*')
+    .neq('status', 'finalizado') 
     .order('created_at', { ascending: false })
 
-  // 2. Busca Xarope (Nova Tabela)
-  // Como só tem 1 linha, usamos single()
-  const { data: dadosXarope } = await supabase
-    .from('EstoqueXarope')
-    .select('quantidade')
-    .single()
-
-  const qtdXarope = dadosXarope?.quantidade || 0
+  // 2. Busca o Estoque Unificado (NOVO)
+  // Substitui a lógica de buscar xarope separado ou somar lotes manualmente
+  const { data: estoque } = await supabase
+    .from('EstoqueProdutos')
+    .select('*')
 
   return (
     <main>
       <DashboardClient 
         lotes={lotes || []} 
-        estoqueXarope={qtdXarope} 
+        estoque={estoque || []} 
       />
     </main>
   )

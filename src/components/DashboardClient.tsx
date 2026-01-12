@@ -6,10 +6,10 @@ import { ModalVenda } from '@/components/ModalVenda'
 
 interface Props {
   lotes: any[]
-  estoqueXarope: number
+  estoque: any[] // MUDANÇA: Recebe a lista completa da tabela EstoqueProdutos
 }
 
-export function DashboardClient({ lotes, estoqueXarope }: Props) {
+export function DashboardClient({ lotes, estoque }: Props) {
   const [isVendaOpen, setIsVendaOpen] = useState(false)
   
   const [indicadores, setIndicadores] = useState({
@@ -24,6 +24,7 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
 
   const fetchIndicadores = async () => {
     try {
+        // Mantemos essa lógica pois ela calcula totais históricos baseados em produção e vendas passadas
         const totalProd750 = lotes.reduce((acc, l) => acc + (l.qtd_garrafas_750 || 0), 0)
         const totalProd375 = lotes.reduce((acc, l) => acc + (l.qtd_garrafas_375 || 0), 0)
         
@@ -41,22 +42,14 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
     } catch (err) { console.error(err) }
   }
 
-  const calcularEstoqueFisico = (tipo: string, tamanho: number) => {
-    return lotes?.filter(
-      l => l.produto?.toLowerCase() === tipo
-    ).reduce((acc, l) => {
-      const qtdLote = tamanho === 750 ? (l.estoque_750 || 0) : (l.estoque_375 || 0)
-      return acc + qtdLote
-    }, 0) || 0
+  // --- NOVA FUNÇÃO HELPER ---
+  // Busca a quantidade direto da prop 'estoque' pelo slug (id de texto)
+  const getQtd = (slug: string) => {
+    const item = estoque.find(i => i.slug === slug)
+    return item ? item.quantidade : 0
   }
 
-  const stock = {
-    l750: calcularEstoqueFisico('limoncello', 750),
-    l375: calcularEstoqueFisico('limoncello', 375),
-    a750: calcularEstoqueFisico('arancello', 750),
-    a375: calcularEstoqueFisico('arancello', 375),
-  }
-
+  // Mantemos o cálculo de Tanques, pois isso ainda vem da tabela Lotes (Líquido a granel)
   const tanques = {
     limoncello: lotes?.filter(l => l.produto === 'limoncello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0,
     arancello: lotes?.filter(l => l.produto === 'arancello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0
@@ -127,7 +120,7 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
         </div>
       </section>
 
-      {/* PRATELEIRA (ESTOQUE ATUAL) */}
+      {/* PRATELEIRA (ESTOQUE ATUAL) - ATUALIZADO */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -141,8 +134,15 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
             <div className="relative z-10">
               <h3 className="text-xl font-black text-yellow-900 mb-6 flex items-center gap-2">🍋 Limoncello</h3>
               <div className="space-y-2">
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center"><span className="text-xs font-bold text-yellow-600 uppercase">750ml</span><span className="text-2xl font-black text-gray-900">{stock.l750}</span></div>
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center"><span className="text-xs font-bold text-yellow-600 uppercase">375ml</span><span className="text-2xl font-black text-gray-900">{stock.l375}</span></div>
+                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
+                    <span className="text-xs font-bold text-yellow-600 uppercase">750ml</span>
+                    {/* USANDO A NOVA FUNÇÃO getQtd */}
+                    <span className="text-2xl font-black text-gray-900">{getQtd('limoncello_750')}</span>
+                </div>
+                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
+                    <span className="text-xs font-bold text-yellow-600 uppercase">375ml</span>
+                    <span className="text-2xl font-black text-gray-900">{getQtd('limoncello_375')}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -152,8 +152,14 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
             <div className="relative z-10">
               <h3 className="text-xl font-black text-orange-900 mb-6 flex items-center gap-2">🍊 Arancello</h3>
               <div className="space-y-2">
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center"><span className="text-xs font-bold text-orange-600 uppercase">750ml</span><span className="text-2xl font-black text-gray-900">{stock.a750}</span></div>
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center"><span className="text-xs font-bold text-orange-600 uppercase">375ml</span><span className="text-2xl font-black text-gray-900">{stock.a375}</span></div>
+                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
+                    <span className="text-xs font-bold text-orange-600 uppercase">750ml</span>
+                    <span className="text-2xl font-black text-gray-900">{getQtd('arancello_750')}</span>
+                </div>
+                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
+                    <span className="text-xs font-bold text-orange-600 uppercase">375ml</span>
+                    <span className="text-2xl font-black text-gray-900">{getQtd('arancello_375')}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -165,7 +171,8 @@ export function DashboardClient({ lotes, estoqueXarope }: Props) {
               <div className="space-y-2">
                 <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center h-[52px]">
                    <span className="text-xs font-bold text-lime-700 uppercase">Garrafa 1L</span>
-                   <span className="text-2xl font-black text-gray-900">{estoqueXarope}</span>
+                   {/* Xarope agora é buscado igual aos outros */}
+                   <span className="text-2xl font-black text-gray-900">{getQtd('xarope')}</span>
                 </div>
                 <div className="bg-lime-100/50 p-3 rounded-xl flex justify-center items-center h-[52px]">
                    <span className="text-[10px] font-bold text-lime-800 uppercase">L. Siciliano</span>
