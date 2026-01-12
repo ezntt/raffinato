@@ -83,17 +83,15 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
          <div className="flex justify-between items-start mb-4">
              <div className="flex items-center gap-2">
                  <span className="text-2xl">{icone}</span>
-                 <h3 className="font-bold text-lg uppercase tracking-tight">{tipo}</h3>
+                 <h3 className="font-bold text-lg tracking-tight">{tipo}</h3>
              </div>
-             {/* Botão de + Maceração no card de Limoncello ou Arancello? Vamos por um geral fora, ou aqui? 
-                 Melhor: Botão "Filtrar" só aparece se tiver saldo com casca */}
          </div>
 
          <div className="grid grid-cols-2 gap-4">
              {/* Coluna COM CASCA */}
              <div className="bg-white/60 p-3 rounded-xl border border-black/5">
                  <span className="text-[10px] font-bold uppercase opacity-60 block">Em Maceração (Com Casca)</span>
-                 <span className="text-2xl font-black block my-1">{casca} L</span>
+                 <span className="text-2xl font-black block my-1">{casca.toFixed(2)} L</span>
                  {casca > 0 && (
                      <button onClick={() => abrirFiltrar(tipo.toLowerCase())} className="text-xs bg-black text-white px-3 py-1.5 rounded-lg font-bold w-full hover:opacity-80 transition-all cursor-pointer">
                         ➔ Filtrar
@@ -104,7 +102,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
              {/* Coluna FILTRADA */}
              <div className="bg-white p-3 rounded-xl border border-black/5 shadow-sm">
                  <span className="text-[10px] font-bold uppercase opacity-60 block">Base Pronta (Filtrada)</span>
-                 <span className="text-2xl font-black block my-1">{filtrada} L</span>
+                 <span className="text-2xl font-black block my-1">{filtrada.toFixed(2)} L</span>
                  <span className="text-[10px] text-gray-400 font-bold block">Disponível para Lotes</span>
              </div>
          </div>

@@ -104,7 +104,7 @@ export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-black text-gray-900">Filtrar Base {tipoInicial === 'limoncello' ? '🍋' : '🍊'}</h2>
+                <h2 className="text-xl font-black text-gray-900">Filtrar Base {tipoInicial === 'limoncello' ? 'Limoncello' : 'Arancello'}</h2>
                 <button onClick={onClose} className="text-gray-400 font-bold p-2 hover:text-black">✕</button>
             </div>
             
