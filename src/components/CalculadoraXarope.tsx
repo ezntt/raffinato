@@ -94,7 +94,7 @@ export function CalculadoraXarope() {
         <div className="text-right flex flex-col items-end">
             <div className="text-xs text-gray-400">Disp: {atual?.toFixed(2)}{unidade}</div>
             <div className={`font-bold font-mono ${!ok ? 'text-red-600' : 'text-green-600'}`}>
-                -{necessario.toFixed(2)}
+                -{necessario.toFixed(2)}{unidade}
             </div>
         </div>
     </div>
@@ -106,11 +106,10 @@ export function CalculadoraXarope() {
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 h-fit">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Ingrediente Principal</label>
                 <div className="mb-2">
-                    <span className="block text-sm font-bold text-gray-700 mb-2">Suco de Limão</span>
+                    <span className="block text-sm font-bold text-gray-700 mb-2">Suco de Limão (Litros)</span>
                     <div className="relative">
-                        <input type="number" autoFocus placeholder='0' value={sucoInput} onChange={(e) => setSucoInput(e.target.value)} className="w-full p-4 bg-white border-2 border-gray-200 focus:border-black rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" />
+                        <input type="text" inputMode='decimal' placeholder='0' value={sucoInput} onChange={(e) => setSucoInput(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-xl text-4xl font-black text-gray-900 outline-none transition-all" />
                     </div>
-                    <p className="text-xs text-right mt-2 text-gray-400 italic">Não desconta do estoque</p>
                 </div>
                 
                 <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs text-gray-600 space-y-2">
@@ -124,11 +123,16 @@ export function CalculadoraXarope() {
             </div>
 
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Insumos Necessários</h3>
-                 <div className="space-y-1">
-                    <RowEstoque label="Açúcar" atual={estAcucar?.qtd || 0} necessario={qtdAcucarXarope} ok={saldoAcucarOk} unidade="kg" />
-                    <RowEstoque label="Garrafa Xarope (Vazia)" atual={estGarrafaVazia?.qtd || 0} necessario={garrafasGeradas} ok={saldoGarrafasOk} unidade="un" />
-                 </div>
+                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Disponibilidade</h3>
+                 {volumeFinalXarope > 0 ? (
+                    <div className="space-y-1">
+                        <RowEstoque label="Açúcar" atual={estAcucar?.qtd || 0} necessario={qtdAcucarXarope} ok={saldoAcucarOk} unidade="kg" />
+                        <RowEstoque label="Garrafa Xarope (Vazia)" atual={estGarrafaVazia?.qtd || 0} necessario={garrafasGeradas} ok={saldoGarrafasOk} unidade="un" />
+                        {!saldoAcucarOk && (<div className="mt-3 text-[10px] text-red-600 font-bold bg-red-50 p-2 rounded text-center uppercase tracking-wide">Estoque Insuficiente</div>)}
+                    </div>
+                 ) : (
+                    <p className="text-sm text-gray-400 italic">Digite o volume.</p>
+                 )}
             </div>
         </div>
 
@@ -139,11 +143,11 @@ export function CalculadoraXarope() {
                     <div><span className="block text-5xl font-black text-gray-900">{garrafasGeradas}</span><span className="text-xl font-bold text-gray-400">Garrafas Prontas</span></div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-sm font-medium space-y-1 border border-gray-200">
-                    <p className="text-gray-900">• Volume Total Líquido: <b>{volumeFinalXarope.toFixed(2)} Litros</b></p>
-                    <p className="text-gray-900">• Sobra Líquida (fundo): <b>{sobraLiquida.toFixed(2)} Litros</b></p>
+                    <p className="text-gray-900">• Volume Total Líquido: <b>{volumeFinalXarope.toFixed(2)} L</b></p>
+                    <p className="text-gray-900">• Sobra Líquida (fundo): <b>{sobraLiquida.toFixed(2)} L</b></p>
                 </div>
             </div>
-            <button onClick={handleSalvarXarope} disabled={loading || qtdSuco <= 0} className="w-full bg-black text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50 mt-8 cursor-pointer">{loading ? 'Engarrafando...' : 'Confirmar Produção e Engarrafar'}</button>
+            <button onClick={handleSalvarXarope} disabled={loading} className="w-full bg-black text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50 mt-8 cursor-pointer">{loading ? 'Engarrafando...' : 'Confirmar Produção e Engarrafar'}</button>
         </div>
       </div>
   )
