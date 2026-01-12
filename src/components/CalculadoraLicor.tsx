@@ -26,8 +26,8 @@ export function CalculadoraLicor() {
         const { data } = await supabase.from('Insumo').select('id, nome, quantidade_atual')
         if (data) {
             const acucar = data.find(i => i.nome === NOME_INSUMO.ACUCAR)
-            const baseL = data.find(i => i.nome === NOME_INSUMO.BASE_LIMONCELLO)
-            const baseA = data.find(i => i.nome === NOME_INSUMO.BASE_ARANCELLO)
+            const baseL = data.find(i => i.nome === NOME_INSUMO.BASE_LIMONCELLO_FILTRADA)
+            const baseA = data.find(i => i.nome === NOME_INSUMO.BASE_ARANCELLO_FILTRADA)
 
             if (acucar) setEstAcucar({ id: acucar.id, qtd: acucar.quantidade_atual })
             if (baseL) setEstBaseL({ id: baseL.id, qtd: baseL.quantidade_atual })
