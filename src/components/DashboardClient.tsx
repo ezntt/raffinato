@@ -6,7 +6,7 @@ import { ModalVenda } from '@/components/ModalVenda'
 
 interface Props {
   lotes: any[]
-  estoque: any[] // MUDANÇA: Recebe a lista completa da tabela EstoqueProdutos
+  estoque: any[]
 }
 
 export function DashboardClient({ lotes, estoque }: Props) {
@@ -15,7 +15,13 @@ export function DashboardClient({ lotes, estoque }: Props) {
   const [indicadores, setIndicadores] = useState({
     faturamento: 0,
     garrafasVendidas: 0,
-    garrafasProduzidas: 0
+    producao: {
+      total: 0,
+      limoncello750: 0,
+      limoncello375: 0,
+      arancello750: 0,
+      arancello375: 0
+    }
   })
 
   useEffect(() => {
@@ -24,9 +30,19 @@ export function DashboardClient({ lotes, estoque }: Props) {
 
   const fetchIndicadores = async () => {
     try {
-        // Mantemos essa lógica pois ela calcula totais históricos baseados em produção e vendas passadas
-        const totalProd750 = lotes.reduce((acc, l) => acc + (l.qtd_garrafas_750 || 0), 0)
-        const totalProd375 = lotes.reduce((acc, l) => acc + (l.qtd_garrafas_375 || 0), 0)
+        let l750 = 0, l375 = 0, a750 = 0, a375 = 0
+
+        lotes.forEach(l => {
+          if (l.produto === 'limoncello') {
+            l750 += (l.qtd_garrafas_750 || 0)
+            l375 += (l.qtd_garrafas_375 || 0)
+          } else if (l.produto === 'arancello') {
+            a750 += (l.qtd_garrafas_750 || 0)
+            a375 += (l.qtd_garrafas_375 || 0)
+          }
+        })
+
+        const totalGeral = l750 + l375 + a750 + a375
         
         const { data: vendas } = await supabase.from('vendas').select('valor_total')
         const { data: itens } = await supabase.from('itens_venda').select('quantidade')
@@ -37,19 +53,22 @@ export function DashboardClient({ lotes, estoque }: Props) {
         setIndicadores({
             faturamento: totalFaturado,
             garrafasVendidas: totalVendidas,
-            garrafasProduzidas: totalProd750 + totalProd375
+            producao: {
+              total: totalGeral,
+              limoncello750: l750,
+              limoncello375: l375,
+              arancello750: a750,
+              arancello375: a375
+            }
         })
     } catch (err) { console.error(err) }
   }
 
-  // --- NOVA FUNÇÃO HELPER ---
-  // Busca a quantidade direto da prop 'estoque' pelo slug (id de texto)
   const getQtd = (slug: string) => {
     const item = estoque.find(i => i.slug === slug)
     return item ? item.quantidade : 0
   }
 
-  // Mantemos o cálculo de Tanques, pois isso ainda vem da tabela Lotes (Líquido a granel)
   const tanques = {
     limoncello: lotes?.filter(l => l.produto === 'limoncello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0,
     arancello: lotes?.filter(l => l.produto === 'arancello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0
@@ -58,6 +77,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       
+      {/* CABEÇALHO */}
       <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Dashboard</h1>
@@ -73,32 +93,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </header>
 
-      {/* INDICADORES */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between h-32">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Faturamento Total</span>
-            <div className="text-3xl font-black text-green-600 tracking-tight">
-                R$ {indicadores.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <div className="text-[10px] text-gray-400 font-bold bg-green-50 w-fit px-2 py-1 rounded text-green-700">Receita Bruta</div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between h-32">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Vendas Realizadas</span>
-            <div className="text-3xl font-black text-purple-600 tracking-tight">
-                {indicadores.garrafasVendidas} <span className="text-lg text-gray-400">un</span>
-            </div>
-            <div className="text-[10px] text-gray-400 font-bold bg-purple-50 w-fit px-2 py-1 rounded text-purple-700">Saída de Estoque</div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between h-32">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Produção Acumulada</span>
-            <div className="text-3xl font-black text-blue-600 tracking-tight">
-                {indicadores.garrafasProduzidas} <span className="text-lg text-gray-400">un</span>
-            </div>
-            <div className="text-[10px] text-gray-400 font-bold bg-blue-50 w-fit px-2 py-1 rounded text-blue-700">Total Engarrafado</div>
-        </div>
-      </section>
-
-      {/* TANQUES */}
+      {/* 1. TANQUES (EM CIMA PARA CELULAR) */}
       <section className="mb-10">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -120,8 +115,8 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* PRATELEIRA (ESTOQUE ATUAL) - ATUALIZADO */}
-      <section>
+      {/* 2. PRATELEIRA / ESTOQUE ATUAL */}
+      <section className="mb-12">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
           Pronta Entrega (Estoque Atual)
@@ -136,7 +131,6 @@ export function DashboardClient({ lotes, estoque }: Props) {
               <div className="space-y-2">
                 <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
                     <span className="text-xs font-bold text-yellow-600 uppercase">750ml</span>
-                    {/* USANDO A NOVA FUNÇÃO getQtd */}
                     <span className="text-2xl font-black text-gray-900">{getQtd('limoncello_750')}</span>
                 </div>
                 <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
@@ -171,7 +165,6 @@ export function DashboardClient({ lotes, estoque }: Props) {
               <div className="space-y-2">
                 <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center h-[52px]">
                    <span className="text-xs font-bold text-lime-700 uppercase">Garrafa 1L</span>
-                   {/* Xarope agora é buscado igual aos outros */}
                    <span className="text-2xl font-black text-gray-900">{getQtd('xarope')}</span>
                 </div>
                 <div className="bg-lime-100/50 p-3 rounded-xl flex justify-center items-center h-[52px]">
@@ -179,6 +172,57 @@ export function DashboardClient({ lotes, estoque }: Props) {
                 </div>
               </div>
             </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 3. ESTATÍSTICAS E INDICADORES (AGORA NO FUNDO) */}
+      <section>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estatísticas Gerais</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          
+          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-32">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Faturamento Total</span>
+              <div className="text-3xl font-black text-green-600 tracking-tight">
+                  R$ {indicadores.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[10px] text-gray-400 font-bold bg-green-50 w-fit px-2 py-1 rounded text-green-700">Receita Bruta</div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-32">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Vendas Realizadas</span>
+              <div className="text-3xl font-black text-purple-600 tracking-tight">
+                  {indicadores.garrafasVendidas} <span className="text-lg text-gray-400">un</span>
+              </div>
+              <div className="text-[10px] text-gray-400 font-bold bg-purple-50 w-fit px-2 py-1 rounded text-purple-700">Saída de Estoque</div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-3 min-h-32">
+              <div className="flex justify-between items-start">
+                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Produção Total</span>
+                 <span className="text-xs font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{indicadores.producao.total} un</span>
+              </div>
+              
+              <div className="flex flex-col gap-2 mt-1">
+                  <div className="flex items-center justify-between text-sm bg-yellow-50/50 p-2 rounded-lg border border-yellow-100">
+                      <span className="font-bold text-yellow-700 flex items-center gap-1">🍋 Limoncello</span>
+                      <div className="flex gap-3 text-xs font-mono font-bold text-gray-600">
+                          <span title="750ml">{indicadores.producao.limoncello750}<span className="text-gray-300 ml-0.5">G</span></span>
+                          <span className="text-gray-300">|</span>
+                          <span title="375ml">{indicadores.producao.limoncello375}<span className="text-gray-300 ml-0.5">P</span></span>
+                      </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm bg-orange-50/50 p-2 rounded-lg border border-orange-100">
+                      <span className="font-bold text-orange-700 flex items-center gap-1">🍊 Arancello</span>
+                      <div className="flex gap-3 text-xs font-mono font-bold text-gray-600">
+                          <span title="750ml">{indicadores.producao.arancello750}<span className="text-gray-300 ml-0.5">G</span></span>
+                          <span className="text-gray-300">|</span>
+                          <span title="375ml">{indicadores.producao.arancello375}<span className="text-gray-300 ml-0.5">P</span></span>
+                      </div>
+                  </div>
+              </div>
           </div>
 
         </div>
