@@ -12,6 +12,10 @@ interface Props {
 export function DashboardClient({ lotes, estoque }: Props) {
   const [isVendaOpen, setIsVendaOpen] = useState(false)
   
+  // Estado para o Modal de Detalhes do Estoque
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailData, setDetailData] = useState<{ produto: string, tamanho: number, itens: any[] } | null>(null)
+
   const [indicadores, setIndicadores] = useState({
     faturamento: 0,
     garrafasVendidas: 0,
@@ -69,6 +73,53 @@ export function DashboardClient({ lotes, estoque }: Props) {
     return item ? item.quantidade : 0
   }
 
+  // Função para abrir detalhes
+  const abrirDetalhes = (produto: string, tamanho: number) => {
+    // Filtra quais lotes tem estoque positivo desse item específico
+    const lotesComEstoque = lotes.filter(l => {
+        const qtdLote = tamanho === 750 ? l.estoque_750 : l.estoque_375
+        return l.produto === produto && qtdLote > 0
+    }).map(l => ({
+        id: l.id,
+        qtd: tamanho === 750 ? l.estoque_750 : l.estoque_375,
+        data: l.created_at
+    }))
+
+    setDetailData({ produto, tamanho, itens: lotesComEstoque })
+    setDetailOpen(true)
+  }
+
+  // Componente Auxiliar para Linha de Estoque (Para não repetir código)
+  const StockRow = ({ produto, tamanho, colorText }: { produto: string, tamanho: number, colorText: string }) => {
+    const qtdTotal = getQtd(`${produto}_${tamanho}`)
+    
+    // Calcula quantos lotes contribuem para este estoque
+    const countLotes = lotes.filter(l => {
+        const qtd = tamanho === 750 ? l.estoque_750 : l.estoque_375
+        return l.produto === produto && qtd > 0
+    }).length
+
+    return (
+        <div 
+            onClick={() => abrirDetalhes(produto, tamanho)}
+            className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center cursor-pointer hover:bg-white transition-all group"
+        >
+            <div className="flex flex-col">
+                <span className={`text-xs font-bold uppercase ${colorText}`}>{tamanho}ml</span>
+                {/* Badge de Lotes */}
+                {countLotes > 0 && (
+                    <span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">
+                        {countLotes} {countLotes === 1 ? 'lote' : 'lotes'}
+                    </span>
+                )}
+            </div>
+            <span className="text-2xl font-black text-gray-900 group-hover:scale-110 transition-transform">
+                {qtdTotal}
+            </span>
+        </div>
+    )
+  }
+
   const tanques = {
     limoncello: lotes?.filter(l => l.produto === 'limoncello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0,
     arancello: lotes?.filter(l => l.produto === 'arancello').reduce((acc, l) => acc + (l.volume_atual || 0), 0) || 0
@@ -93,7 +144,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </header>
 
-      {/* 1. TANQUES (EM CIMA PARA CELULAR) */}
+      {/* 1. TANQUES */}
       <section className="mb-10">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -129,14 +180,8 @@ export function DashboardClient({ lotes, estoque }: Props) {
             <div className="relative z-10">
               <h3 className="text-xl font-black text-yellow-900 mb-6 flex items-center gap-2">🍋 Limoncello</h3>
               <div className="space-y-2">
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
-                    <span className="text-xs font-bold text-yellow-600 uppercase">750ml</span>
-                    <span className="text-2xl font-black text-gray-900">{getQtd('limoncello_750')}</span>
-                </div>
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
-                    <span className="text-xs font-bold text-yellow-600 uppercase">375ml</span>
-                    <span className="text-2xl font-black text-gray-900">{getQtd('limoncello_375')}</span>
-                </div>
+                <StockRow produto="limoncello" tamanho={750} colorText="text-yellow-600" />
+                <StockRow produto="limoncello" tamanho={375} colorText="text-yellow-600" />
               </div>
             </div>
           </div>
@@ -146,28 +191,22 @@ export function DashboardClient({ lotes, estoque }: Props) {
             <div className="relative z-10">
               <h3 className="text-xl font-black text-orange-900 mb-6 flex items-center gap-2">🍊 Arancello</h3>
               <div className="space-y-2">
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
-                    <span className="text-xs font-bold text-orange-600 uppercase">750ml</span>
-                    <span className="text-2xl font-black text-gray-900">{getQtd('arancello_750')}</span>
-                </div>
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center">
-                    <span className="text-xs font-bold text-orange-600 uppercase">375ml</span>
-                    <span className="text-2xl font-black text-gray-900">{getQtd('arancello_375')}</span>
-                </div>
+                <StockRow produto="arancello" tamanho={750} colorText="text-orange-600" />
+                <StockRow produto="arancello" tamanho={375} colorText="text-orange-600" />
               </div>
             </div>
           </div>
 
-          {/* Xarope */}
+          {/* Xarope (Não clicável pois não tem lote na tabela Lote) */}
           <div className="bg-lime-50 p-8 rounded-3xl border border-lime-100 relative overflow-hidden">
             <div className="relative z-10">
               <h3 className="text-xl font-black text-lime-900 mb-6 flex items-center gap-2">🍯 Xarope</h3>
               <div className="space-y-2">
-                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center h-[52px]">
+                <div className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center h-[68px]">
                    <span className="text-xs font-bold text-lime-700 uppercase">Garrafa 1L</span>
                    <span className="text-2xl font-black text-gray-900">{getQtd('xarope')}</span>
                 </div>
-                <div className="bg-lime-100/50 p-3 rounded-xl flex justify-center items-center h-[52px]">
+                <div className="bg-lime-100/50 p-3 rounded-xl flex justify-center items-center h-[68px]">
                    <span className="text-[10px] font-bold text-lime-800 uppercase">L. Siciliano</span>
                 </div>
               </div>
@@ -177,7 +216,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
-      {/* 3. ESTATÍSTICAS E INDICADORES (AGORA NO FUNDO) */}
+      {/* 3. ESTATÍSTICAS E INDICADORES */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estatísticas Gerais</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -227,6 +266,43 @@ export function DashboardClient({ lotes, estoque }: Props) {
 
         </div>
       </section>
+
+      {/* MODAL DETALHE ESTOQUE */}
+      {detailOpen && detailData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 className="text-xl font-black text-gray-900 capitalize">{detailData.produto} {detailData.tamanho}ml</h2>
+                        <p className="text-xs text-gray-400 font-bold uppercase">Detalhamento por Lote</p>
+                    </div>
+                    <button onClick={() => setDetailOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
+                </div>
+                
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                    {detailData.itens.length === 0 ? (
+                        <p className="text-sm text-gray-400 italic">Nenhum lote com estoque.</p>
+                    ) : (
+                        detailData.itens.map(item => (
+                            <div key={item.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div>
+                                    <span className="block text-xs font-bold text-gray-400 uppercase">Lote</span>
+                                    <span className="font-mono font-bold text-gray-900">{item.id}</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="block text-lg font-black text-gray-900">{item.qtd}</span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Unidades</span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+                    <p className="text-xs text-gray-400">Total Geral: <span className="text-black font-bold">{getQtd(`${detailData.produto}_${detailData.tamanho}`)}</span> un</p>
+                </div>
+            </div>
+        </div>
+      )}
 
       <ModalVenda isOpen={isVendaOpen} onClose={() => { setIsVendaOpen(false); fetchIndicadores(); }} />
     </div>
