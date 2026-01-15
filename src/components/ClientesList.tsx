@@ -25,6 +25,8 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const [tipo, setTipo] = useState('PF') 
   const [email, setEmail] = useState('')
   const [cpfCnpj, setCpfCnpj] = useState('')
+  const [inscricaoEstadual, setInscricaoEstadual] = useState('') // NOVO CAMPO
+  
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState('')
   const [numero, setNumero] = useState('')
@@ -130,6 +132,8 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     setIdEdicao(c.id)
     setNome(c.nome); setTelefone(c.telefone || ''); setTipo(c.tipo || 'PF')
     setEmail(c.email || ''); setCpfCnpj(c.cpf_cnpj || '')
+    setInscricaoEstadual(c.inscricao_estadual || '') // Carrega IE se existir
+    
     setCep(c.cep || ''); setEndereco(c.endereco || ''); setNumero(c.numero || '')
     setBairro(c.bairro || ''); setCidade(c.cidade || ''); setEstado(c.estado || '')
     setComplemento(c.complemento || '')
@@ -159,7 +163,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   }
 
   const limparForm = () => {
-    setNome(''); setTelefone(''); setTipo('PF'); setEmail(''); setCpfCnpj('')
+    setNome(''); setTelefone(''); setTipo('PF'); setEmail(''); setCpfCnpj(''); setInscricaoEstadual('')
     setCep(''); setEndereco(''); setNumero(''); setBairro(''); setCidade('Florianópolis'); setEstado('SC'); setComplemento('')
   }
 
@@ -169,6 +173,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
     const payload = {
         nome, telefone, tipo, email, cpf_cnpj: cpfCnpj,
+        inscricao_estadual: tipo === 'PJ' ? inscricaoEstadual : null, // Só envia se for PJ
         cep, endereco, numero, bairro, cidade, estado, complemento
     }
 
@@ -287,7 +292,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">Tipo *</label>
-                                        <select value={tipo} onChange={e => { setTipo(e.target.value); setCpfCnpj('') }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 cursor-pointer">
+                                        <select value={tipo} onChange={e => { setTipo(e.target.value); setCpfCnpj(''); setInscricaoEstadual('') }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 cursor-pointer">
                                             <option value="PF">Pessoa Física</option>
                                             <option value="PJ">Pessoa Jurídica</option>
                                         </select>
@@ -305,6 +310,14 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                         <label className="text-xs font-bold text-gray-500 uppercase">{tipo === 'PF' ? 'CPF' : 'CNPJ (busca automática)'}</label>
                                         <input value={cpfCnpj} onChange={e => handleDocChange(e.target.value)} maxLength={tipo === 'PF' ? 14 : 18} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black font-mono text-gray-900 placeholder-gray-300" placeholder={tipo === 'PJ' ? 'Digite para buscar...' : ''} />
                                     </div>
+
+                                    {tipo === 'PJ' && (
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Inscrição Estadual</label>
+                                            <input value={inscricaoEstadual} onChange={e => setInscricaoEstadual(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 placeholder-gray-300" placeholder="Isento ou Nº" />
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">CEP</label>
                                         <input value={cep} onChange={e => { setCep(maskCep(e.target.value)); if(e.target.value.length >= 8) buscarCep(e.target.value) }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
