@@ -14,7 +14,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
   // Filtra a lista
   const vendasFiltradas = vendas.filter(v => {
     // 1. Filtro de Mês
-    if (!v.data_venda.startsWith(filtroMes)) return false
+    if (filtroMes && !v.data_venda.startsWith(filtroMes)) return false
 
     // 2. Filtro de Status
     if (filtro === 'pagos' && !v.pago) return false
@@ -62,7 +62,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Histórico de Vendas</h1>
           <p className="text-gray-400 font-bold text-xs mt-1 uppercase">
-            Exibindo {vendasFiltradas.length} vendas em {filtroMes}
+            Exibindo {vendasFiltradas.length} vendas em {filtroMes || 'todo o período'}
           </p>
         </div>
         
@@ -83,7 +83,17 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
         
         {/* Filtro Mês */}
         <div className="flex-none">
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Mês de Referência</label>
+            <div className="flex justify-between items-center mb-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase block">Mês de Referência (yyyy-mm)</label>
+                {filtroMes && (
+                    <button 
+                        onClick={() => setFiltroMes('')}
+                        className="text-[10px] font-bold text-blue-600 uppercase hover:underline"
+                    >
+                        Ver tudo
+                    </button>
+                )}
+            </div>
             <input 
                 type="month" 
                 value={filtroMes} 

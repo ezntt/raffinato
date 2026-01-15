@@ -110,8 +110,8 @@ export function DashboardClient({ lotes, estoque }: Props) {
           <p className="text-sm text-gray-400 font-medium">Visão geral da operação</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setIsVendaOpen(true)} className="bg-green-600  text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"><span>Nova Venda</span></button>
-          <Link href="/producao" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2"><span>Nova Produção</span></Link>
+          <button onClick={() => setIsVendaOpen(true)} className="bg-green-600  text-white px-6 py-4 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"><span>Nova Venda</span></button>
+          <Link href="/producao" className="bg-black text-white px-6 py-4 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2"><span>Nova Produção</span></Link>
         </div>
       </header>
 

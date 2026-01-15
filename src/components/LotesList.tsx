@@ -117,7 +117,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
         <section>
             <div className="flex justify-between items-end mb-4">
                 <h2 className="text-xl font-black text-gray-900">Maceração & Bases</h2>
-                <button onClick={() => setIsMaceracaoOpen(true)} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all  shadow-lg">
+                <button onClick={() => setIsMaceracaoOpen(true)} className="bg-black  hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center">
                     + Nova Maceração
                 </button>
             </div>

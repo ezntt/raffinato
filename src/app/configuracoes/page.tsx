@@ -23,7 +23,7 @@ export default function ConfiguracoesPage() {
   const [cidade, setCidade] = useState('Florianópolis')
   const [estado, setEstado] = useState('SC')
 
-  // NOVO: Estado do Form - Custos e Parâmetros
+  // Estado do Form - Custos e Parâmetros
   const [custoAluguel, setCustoAluguel] = useState('')
   const [custoRt, setCustoRt] = useState('') // Responsável Técnico
   const [impostoPadrao, setImpostoPadrao] = useState('')
@@ -187,14 +187,10 @@ export default function ConfiguracoesPage() {
 
         {/* NOVA SEÇÃO: CUSTOS E PARÂMETROS */}
         <section className="bg-white p-6 md:p-8 rounded-3xl border border-orange-200 shadow-sm relative overflow-hidden">
-            {/* Aviso de Desenvolvimento */}
             <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 rounded-r">
                 <div className="flex items-start">
                     <div className="ml-1">
                         <h3 className="text-orange-800 font-bold text-sm uppercase tracking-wide">🚧 Em Desenvolvimento</h3>
-                        <p className="text-orange-700 text-xs mt-1 leading-relaxed">
-                            <strong>Em Desenvolvimento</strong>
-                        </p>
                     </div>
                 </div>
             </div>
@@ -248,7 +244,7 @@ export default function ConfiguracoesPage() {
                 disabled={saving}
                 className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all disabled:opacity-50 w-full md:w-auto text-lg "
             >
-                {saving ? 'Salvando...' : 'Salvar Todas Configurações'}
+                {saving ? 'Salvando...' : 'Salvar Configurações'}
             </button>
         </div>
 
