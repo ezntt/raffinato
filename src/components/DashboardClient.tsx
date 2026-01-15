@@ -166,13 +166,10 @@ export function DashboardClient({ lotes, estoque }: Props) {
       {/* 3. ESTATÍSTICAS */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estatísticas Gerais</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        {/* ALTERAÇÃO: grid-cols-3 virou grid-cols-2 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-32">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Faturamento Total</span>
-              <div className="text-3xl font-black text-green-600 tracking-tight">R$ {indicadores.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-              <div className="text-[10px] text-gray-400 font-bold bg-green-50 w-fit px-2 py-1 rounded text-green-700">Receita Bruta</div>
-          </div>
+          {/* ALTERAÇÃO: Removido o bloco de Faturamento daqui */}
 
           <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-3 min-h-32">
               <div className="flex justify-between items-start">
