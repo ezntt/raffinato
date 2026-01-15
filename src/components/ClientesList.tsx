@@ -214,7 +214,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
             />
         </div>
         
-        <button onClick={abrirNovo} className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center">
+        <button onClick={abrirNovo} className="bg-black  hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center">
             <span>+ Novo Cliente</span>
         </button>
       </div>
@@ -238,7 +238,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                     </tr>
                 )}
                 {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors group cursor-pointer">
+                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors group ">
                     <td className="p-4">
                         <span className="block font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{cliente.nome}</span>
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block bg-gray-100 text-gray-500">{cliente.tipo}</span>
@@ -265,7 +265,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         {clientesFiltrados.length === 0 && <p className="text-center text-gray-400">Nenhum cliente encontrado.</p>}
         
         {clientesFiltrados.map((cliente) => (
-            <div key={cliente.id} onClick={() => abrirCliente(cliente)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer">
+            <div key={cliente.id} onClick={() => abrirCliente(cliente)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform ">
                 <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-bold text-gray-900 text-lg">{cliente.nome}</h3>
@@ -288,7 +288,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                 
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
                     <h2 className="text-2xl font-black text-gray-900">{modoEdicao ? 'Ficha do Cliente' : 'Novo Cliente'}</h2>
-                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
+                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl ">✕</button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
@@ -311,7 +311,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">Tipo *</label>
-                                        <select value={tipo} onChange={e => { setTipo(e.target.value); setCpfCnpj(''); setInscricaoEstadual('') }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 cursor-pointer">
+                                        <select value={tipo} onChange={e => { setTipo(e.target.value); setCpfCnpj(''); setInscricaoEstadual('') }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900 ">
                                             <option value="PF">Pessoa Física</option>
                                             <option value="PJ">Pessoa Jurídica</option>
                                         </select>
@@ -370,7 +370,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                 </div>
                             </div>
 
-                            <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 cursor-pointer">
+                            <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 ">
                                 {loading ? 'Salvando...' : (modoEdicao ? 'Salvar Alterações' : 'Cadastrar Cliente')}
                             </button>
                         </div>
@@ -391,7 +391,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                     )}
 
                                     {historicoVendas.map(venda => (
-                                        <div key={venda.id} onClick={() => router.push(`/vendas/${venda.id}`)} className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group shadow-sm">
+                                        <div key={venda.id} onClick={() => router.push(`/vendas/${venda.id}`)} className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 hover:bg-blue-50  transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group shadow-sm">
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">#{venda.id}</span>

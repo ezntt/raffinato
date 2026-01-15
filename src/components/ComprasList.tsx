@@ -24,7 +24,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
                 type="month" 
                 value={filtroMes} 
                 onChange={e => setFiltroMes(e.target.value)}
-                className="bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-gray-900 outline-none focus:border-black cursor-pointer"
+                className="bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-gray-900 outline-none focus:border-black "
             />
         </div>
         <div className="text-right">

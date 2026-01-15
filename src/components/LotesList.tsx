@@ -93,7 +93,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                  <span className="text-[10px] font-bold uppercase opacity-60 block">Em Maceração (Com Casca)</span>
                  <span className="text-2xl font-black block my-1">{casca.toFixed(2)} L</span>
                  {casca > 0 && (
-                     <button onClick={() => abrirFiltrar(tipo.toLowerCase())} className="text-xs bg-black text-white px-3 py-1.5 rounded-lg font-bold w-full hover:opacity-80 transition-all cursor-pointer">
+                     <button onClick={() => abrirFiltrar(tipo.toLowerCase())} className="text-xs bg-black text-white px-3 py-1.5 rounded-lg font-bold w-full hover:opacity-80 transition-all ">
                         ➔ Filtrar
                      </button>
                  )}
@@ -117,7 +117,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
         <section>
             <div className="flex justify-between items-end mb-4">
                 <h2 className="text-xl font-black text-gray-900">Maceração & Bases</h2>
-                <button onClick={() => setIsMaceracaoOpen(true)} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all cursor-pointer shadow-lg">
+                <button onClick={() => setIsMaceracaoOpen(true)} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all  shadow-lg">
                     + Nova Maceração
                 </button>
             </div>
@@ -165,7 +165,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
                             <button 
                                 onClick={(e) => { e.stopPropagation(); excluirLote(lote.id) }}
                                 disabled={deletingId === lote.id}
-                                className="absolute cursor-pointer top-4 right-4 text-gray-300 hover:text-red-600 font-bold text-xs p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                className="absolute  top-4 right-4 text-gray-300 hover:text-red-600 font-bold text-xs p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                             >
                                 {deletingId === lote.id ? '⏳' : '🗑️'}
                             </button>
@@ -195,9 +195,9 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
 
                             <div className="w-full md:w-auto">
                                 {isPronto ? (
-                                <button onClick={() => abrirEngarrafar(lote)} className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all w-full">Engarrafar</button>
+                                <button onClick={() => abrirEngarrafar(lote)} className="bg-blue-600  hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all w-full">Engarrafar</button>
                                 ) : (
-                                <button onClick={() => liberarLote(lote.id)} disabled={loadingId === lote.id} className="bg-white border-2 border-green-500 text-green-600 hover:bg-green-50 cursor-pointer px-6 py-3 rounded-xl font-bold text-sm transition-all w-full">{loadingId === lote.id ? 'Salvando...' : '✅ Aprovar Lote'}</button>
+                                <button onClick={() => liberarLote(lote.id)} disabled={loadingId === lote.id} className="bg-white border-2 border-green-500 text-green-600 hover:bg-green-50  px-6 py-3 rounded-xl font-bold text-sm transition-all w-full">{loadingId === lote.id ? 'Salvando...' : '✅ Aprovar Lote'}</button>
                                 )}
                             </div>
                         </div>

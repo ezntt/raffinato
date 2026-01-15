@@ -126,7 +126,7 @@ export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
                     <input type="number" step="0.1" required value={qtdEntrada} onChange={e => setQtdEntrada(e.target.value)} className="w-full p-2 bg-white border border-green-200 rounded-lg font-bold text-lg outline-none focus:border-green-500" placeholder="Ex: 18.5" />
                 </div>
 
-                <button type="submit" disabled={loading} className="w-full bg-black text-white font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transition-all cursor-pointer">
+                <button type="submit" disabled={loading} className="w-full bg-black text-white font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transition-all ">
                     {loading ? 'Processando...' : 'Confirmar Filtragem'}
                 </button>
             </form>

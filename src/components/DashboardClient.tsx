@@ -86,7 +86,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
     }).length
 
     return (
-        <div onClick={() => abrirDetalhes(produto, tamanho)} className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center cursor-pointer hover:bg-white transition-all group">
+        <div onClick={() => abrirDetalhes(produto, tamanho)} className="bg-white/80 p-3 rounded-xl backdrop-blur-sm flex justify-between items-center  hover:bg-white transition-all group">
             <div className="flex flex-col">
                 <span className={`text-xs font-bold uppercase ${colorText}`}>{tamanho}ml</span>
                 {countLotes > 0 && (<span className="text-[10px] text-gray-400 font-medium group-hover:text-gray-600">{countLotes} {countLotes === 1 ? 'lote' : 'lotes'}</span>)}
@@ -110,8 +110,8 @@ export function DashboardClient({ lotes, estoque }: Props) {
           <p className="text-sm text-gray-400 font-medium">Visão geral da operação</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setIsVendaOpen(true)} className="bg-green-600 cursor-pointer text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"><span>$ Nova Venda</span></button>
-          <Link href="/producao" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2"><span>+ Nova Produção</span></Link>
+          <button onClick={() => setIsVendaOpen(true)} className="bg-green-600  text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg text-sm flex items-center gap-2"><span>Nova Venda</span></button>
+          <Link href="/producao" className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg text-sm flex items-center gap-2"><span>Nova Produção</span></Link>
         </div>
       </header>
 
@@ -233,7 +233,7 @@ export function DashboardClient({ lotes, estoque }: Props) {
                         <h2 className="text-xl font-black text-gray-900 capitalize">{detailData.produto} {detailData.tamanho}ml</h2>
                         <p className="text-xs text-gray-400 font-bold uppercase">Detalhamento por Lote</p>
                     </div>
-                    <button onClick={() => setDetailOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
+                    <button onClick={() => setDetailOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl ">✕</button>
                 </div>
                 
                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">

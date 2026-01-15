@@ -88,7 +88,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
                 type="month" 
                 value={filtroMes} 
                 onChange={e => setFiltroMes(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 font-bold text-gray-900 outline-none focus:border-black cursor-pointer"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 font-bold text-gray-900 outline-none focus:border-black "
             />
         </div>
 
@@ -108,9 +108,9 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
         <div className="flex-none">
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Status</label>
             <div className="flex bg-gray-100 p-1 rounded-xl h-[46px]">
-                <button onClick={() => setFiltro('todos')} className={`px-4 cursor-pointer rounded-lg text-sm font-bold transition-all ${filtro === 'todos' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Todos</button>
-                <button onClick={() => setFiltro('pagos')} className={`px-4 cursor-pointer rounded-lg text-sm font-bold transition-all ${filtro === 'pagos' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-green-600'}`}>Pagos</button>
-                <button onClick={() => setFiltro('pendentes')} className={`px-4 cursor-pointer rounded-lg text-sm font-bold transition-all ${filtro === 'pendentes' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Pendentes</button>
+                <button onClick={() => setFiltro('todos')} className={`px-4  rounded-lg text-sm font-bold transition-all ${filtro === 'todos' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Todos</button>
+                <button onClick={() => setFiltro('pagos')} className={`px-4  rounded-lg text-sm font-bold transition-all ${filtro === 'pagos' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-green-600'}`}>Pagos</button>
+                <button onClick={() => setFiltro('pendentes')} className={`px-4  rounded-lg text-sm font-bold transition-all ${filtro === 'pendentes' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Pendentes</button>
             </div>
         </div>
       </div>
@@ -127,7 +127,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
         {vendasFiltradas.map((venda) => (
           <div key={venda.id} className="flex flex-col md:flex-row bg-white p-6 rounded-2xl border border-gray-100 hover:border-black transition-all gap-4 md:items-center">
             
-            <Link href={`/vendas/${venda.id}`} className="flex-1 flex items-center gap-4 group cursor-pointer">
+            <Link href={`/vendas/${venda.id}`} className="flex-1 flex items-center gap-4 group ">
               <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center font-bold text-gray-400 group-hover:bg-black group-hover:text-white transition-colors">#{venda.id}</div>
               <div>
                 <h2 className="font-bold text-lg text-gray-900">{venda.Cliente?.nome || 'Cliente Desconhecido'}</h2>
@@ -144,7 +144,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); togglePagamento(venda.id, venda.pago) }}
-                className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl text-xs font-bold uppercase border transition-all ${venda.pago ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
+                className={`flex items-center gap-2  px-4 py-2 rounded-xl text-xs font-bold uppercase border transition-all ${venda.pago ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
               >
                 {venda.pago ? <>✓ Pago</> : <>Marcar Pago</>}
               </button>

@@ -136,8 +136,8 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         {/* Abas */}
         <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
-            <button onClick={() => setActiveTab('estoque')} className={`flex-1 cursor-pointer md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Estoque Atual</button>
-            <button onClick={() => setActiveTab('historico')} className={`flex-1 cursor-pointer md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Histórico Compras</button>
+            <button onClick={() => setActiveTab('estoque')} className={`flex-1  md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Estoque Atual</button>
+            <button onClick={() => setActiveTab('historico')} className={`flex-1  md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Histórico Compras</button>
         </div>
 
         {/* Botões de Ação */}
@@ -145,9 +145,9 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
             {/* Botão de Maceração Removido daqui */}
             <button 
                 onClick={() => setModalOpen(true)}
-                className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer flex-1 md:flex-none justify-center"
+                className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2  flex-1 md:flex-none justify-center"
             >
-                <span>+ Compra</span>
+                <span>Registrar Compra</span>
             </button>
         </div>
       </div>
@@ -172,12 +172,12 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
             <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-black text-gray-900">Registrar Compra</h2>
-                    <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl cursor-pointer">✕</button>
+                    <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-black font-bold p-2 text-xl ">✕</button>
                 </div>
                 <form onSubmit={handleSalvarCompra} className="space-y-4 overflow-y-auto pr-2">
                     <div>
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Insumo</label>
-                        <select required value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 font-bold cursor-pointer">
+                        <select required value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 font-bold ">
                             <option value="">Selecione...</option>
                             {Object.keys(insumosAgrupados).map(chave => {
                                 const items = insumosAgrupados[chave as keyof typeof insumosAgrupados]
@@ -217,7 +217,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Observação</label>
                         <input value={obs} onChange={e => setObs(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" placeholder="Ex: Marca Y" />
                     </div>
-                    <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 mt-4 cursor-pointer">
+                    <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 mt-4 ">
                         {loading ? 'Salvando...' : 'Confirmar Compra'}
                     </button>
                 </form>

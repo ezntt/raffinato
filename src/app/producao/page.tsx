@@ -14,13 +14,13 @@ export default function ProducaoPage() {
         <div className="flex gap-2 mt-6 p-1 bg-gray-100 rounded-xl w-fit">
             <button 
                 onClick={() => setActiveTab('licor')}
-                className={`px-6 py-2 cursor-pointer rounded-lg font-bold text-sm transition-all ${activeTab === 'licor' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`px-6 py-2  rounded-lg font-bold text-sm transition-all ${activeTab === 'licor' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
                 Licor (Lote)
             </button>
             <button 
                 onClick={() => setActiveTab('xarope')}
-                className={`px-6 py-2 cursor-pointer rounded-lg font-bold text-sm transition-all ${activeTab === 'xarope' ? 'bg-white text-yellow-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`px-6 py-2  rounded-lg font-bold text-sm transition-all ${activeTab === 'xarope' ? 'bg-white text-yellow-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
                 Xarope (Garrafas)
             </button>

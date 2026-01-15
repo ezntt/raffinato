@@ -83,7 +83,7 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
       <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-black text-gray-900">Nova Maceração</h2>
-            <button onClick={onClose} className="text-gray-400 cursor-pointer hover:text-black font-bold p-2">✕</button>
+            <button onClick={onClose} className="text-gray-400  hover:text-black font-bold p-2">✕</button>
         </div>
 
         <form onSubmit={handleMacerar} className="space-y-4">
@@ -95,8 +95,8 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase ml-1">Produto</label>
                 <div className="flex gap-2 mt-1">
-                    <button type="button" onClick={() => setTipo('limoncello')} className={`flex-1 cursor-pointer py-2 rounded-lg font-bold text-sm border-2 ${tipo === 'limoncello' ? 'border-yellow-400 bg-yellow-50 text-yellow-900' : 'border-transparent bg-gray-100 text-gray-400'}`}>Limoncello</button>
-                    <button type="button" onClick={() => setTipo('arancello')} className={`flex-1 cursor-pointer py-2 rounded-lg font-bold text-sm border-2 ${tipo === 'arancello' ? 'border-orange-400 bg-orange-50 text-orange-900' : 'border-transparent bg-gray-100 text-gray-400'}`}>Arancello</button>
+                    <button type="button" onClick={() => setTipo('limoncello')} className={`flex-1  py-2 rounded-lg font-bold text-sm border-2 ${tipo === 'limoncello' ? 'border-yellow-400 bg-yellow-50 text-yellow-900' : 'border-transparent bg-gray-100 text-gray-400'}`}>Limoncello</button>
+                    <button type="button" onClick={() => setTipo('arancello')} className={`flex-1  py-2 rounded-lg font-bold text-sm border-2 ${tipo === 'arancello' ? 'border-orange-400 bg-orange-50 text-orange-900' : 'border-transparent bg-gray-100 text-gray-400'}`}>Arancello</button>
                 </div>
             </div>
 
@@ -106,7 +106,7 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
                 <p className="text-[10px] text-gray-400 mt-1 ml-1">A quantidade de cascas não altera o estoque.</p>
             </div>
 
-            <button type="submit" disabled={loading} className="w-full cursor-pointer bg-black hover:bg-gray-800 text-white font-bold py-3 rounded-xl shadow-lg transition-all disabled:opacity-50">
+            <button type="submit" disabled={loading} className="w-full  bg-black hover:bg-gray-800 text-white font-bold py-3 rounded-xl shadow-lg transition-all disabled:opacity-50">
                 {loading ? 'Processando...' : 'Confirmar'}
             </button>
         </form>

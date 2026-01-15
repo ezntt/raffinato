@@ -18,7 +18,7 @@ export function DashboardActions() {
         <button 
           // O SEGREDO ESTÁ AQUI: Mudamos de alert() para setIsModalOpen(true)
           onClick={() => setIsModalOpen(true)} 
-          className="bg-gray-900 hover:bg-black text-white p-4 rounded-xl font-bold text-center transition shadow-lg shadow-gray-300 flex items-center justify-center gap-2 cursor-pointer"
+          className="bg-gray-900 hover:bg-black text-white p-4 rounded-xl font-bold text-center transition shadow-lg shadow-gray-300 flex items-center justify-center gap-2 "
         >
           <span>$ Registrar Venda / Saída</span>
         </button>

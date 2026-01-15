@@ -246,7 +246,7 @@ export default function ConfiguracoesPage() {
             <button 
                 type="submit" 
                 disabled={saving}
-                className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all disabled:opacity-50 w-full md:w-auto text-lg cursor-pointer"
+                className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all disabled:opacity-50 w-full md:w-auto text-lg "
             >
                 {saving ? 'Salvando...' : 'Salvar Todas Configurações'}
             </button>

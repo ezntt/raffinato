@@ -147,7 +147,7 @@ export function CalculadoraXarope() {
                     <p className="text-gray-900">• Sobra Líquida (fundo): <b>{sobraLiquida.toFixed(2)} L</b></p>
                 </div>
             </div>
-            <button onClick={handleSalvarXarope} disabled={loading} className="w-full bg-black text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50 mt-8 cursor-pointer">{loading ? 'Engarrafando...' : 'Confirmar Produção e Engarrafar'}</button>
+            <button onClick={handleSalvarXarope} disabled={loading} className="w-full bg-black text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50 mt-8 ">{loading ? 'Engarrafando...' : 'Confirmar Produção e Engarrafar'}</button>
         </div>
       </div>
   )

@@ -125,8 +125,8 @@ export function CalculadoraLicor() {
                 <div className="mb-6">
                     <span className="block text-sm font-bold text-gray-700 mb-2">Produto</span>
                     <div className="flex gap-2">
-                        <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
-                        <button onClick={() => setTipo('arancello')} className={`flex-1 py-3 cursor-pointer rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
+                        <button onClick={() => setTipo('limoncello')} className={`flex-1 py-3  rounded-lg font-bold transition-all ${tipo === 'limoncello' ? 'bg-yellow-400 text-yellow-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Limoncello</button>
+                        <button onClick={() => setTipo('arancello')} className={`flex-1 py-3  rounded-lg font-bold transition-all ${tipo === 'arancello' ? 'bg-orange-400 text-orange-900 shadow-md' : 'bg-gray-100 text-gray-400'}`}>Arancello</button>
                     </div>
                     
                     <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-900 space-y-3 shadow-sm">
@@ -190,7 +190,7 @@ export function CalculadoraLicor() {
             </div>
             <div className="mt-8 pt-6 border-t border-gray-100">
                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-4"><span className="text-xs text-gray-400 uppercase font-bold">Rendimento Estimado</span><span className="text-3xl font-mono font-black text-green-600">± {garrafasEstimadas.toFixed(0)} <span className="text-lg text-green-700">garrafas</span></span></div>
-               <button type="button" onClick={handleSalvarLote} disabled={loading} className={`w-full font-bold py-5 rounded-2xl shadow-lg cursor-pointer transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 ${temInsumos ? 'bg-black hover:bg-gray-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}>{loading ? 'Salvando...' : (temInsumos ? 'Confirmar Produção' : 'Estoque Insuficiente (Forçar)')}</button>
+               <button type="button" onClick={handleSalvarLote} disabled={loading} className={`w-full font-bold py-5 rounded-2xl shadow-lg  transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 ${temInsumos ? 'bg-black hover:bg-gray-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}>{loading ? 'Salvando...' : (temInsumos ? 'Confirmar Produção' : 'Estoque Insuficiente (Forçar)')}</button>
             </div>
         </div>
       </div>
