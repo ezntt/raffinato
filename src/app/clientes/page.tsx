@@ -1,16 +1,14 @@
 import { createClient } from '@/lib/supabaseServer'
-import { ClientesList } from '@/components/ClientesList' // Importando seu novo componente
+import { ClientesList } from '@/components/ClientesList'
 
 export const revalidate = 0
 
 export default async function ClientesPage() {
   const supabase = await createClient()
 
-  // 1. Busca os clientes no Banco (Server-Side)
-  // Lembre-se: Nome da tabela é 'Cliente' (Singular e Maiúsculo conforme seu padrão)
   const { data: clientes } = await supabase
     .from('Cliente')
-    .select('*')
+    .select('*, vendas(id)') 
     .order('nome')
 
   return (
@@ -19,7 +17,6 @@ export default async function ClientesPage() {
         <h1 className="text-3xl font-black text-gray-900 tracking-tight">Carteira de Clientes</h1>
       </header>
 
-      {/* 2. Passa os dados para o componente interativo */}
       <ClientesList initialClientes={clientes || []} />
     </div>
   )

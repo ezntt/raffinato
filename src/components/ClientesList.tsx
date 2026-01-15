@@ -15,7 +15,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const [modoEdicao, setModoEdicao] = useState(false) 
   const [idEdicao, setIdEdicao] = useState<string | null>(null)
 
-  // Estado do Histórico
+  // Estado do Histórico (usado apenas dentro do modal)
   const [historicoVendas, setHistoricoVendas] = useState<any[]>([])
   const [loadingHistorico, setLoadingHistorico] = useState(false)
 
@@ -43,10 +43,8 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const [estado, setEstado] = useState('SC')
   const [complemento, setComplemento] = useState('')
 
-  // Estado de carregamento específico para APIs externas
   const [buscandoDados, setBuscandoDados] = useState(false)
 
-  // === HELPERS VISUAIS ===
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
 
   // === MÁSCARAS ===
@@ -58,7 +56,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     return v ? v.replace(/^(\d*)/, "($1") : ""
   }
 
-  // Máscara e Busca Automática de CNPJ
   const handleDocChange = async (v: string) => {
       const limpo = v.replace(/\D/g, "")
       
@@ -183,12 +180,15 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         if (modoEdicao && idEdicao) {
             const { error } = await supabase.from('Cliente').update(payload).eq('id', idEdicao)
             if (error) throw error
-            setClientes(clientes.map(c => c.id === idEdicao ? { ...c, ...payload } : c))
+            // Preserva a contagem de vendas ao atualizar a lista local
+            const vendasCount = clientes.find(c => c.id === idEdicao)?.vendas
+            setClientes(clientes.map(c => c.id === idEdicao ? { ...c, ...payload, vendas: vendasCount } : c))
             alert("Cliente atualizado!")
         } else {
             const { data: novo, error } = await supabase.from('Cliente').insert(payload).select().single()
             if (error) throw error
-            setClientes([...clientes, novo].sort((a,b) => a.nome.localeCompare(b.nome)))
+            // Novo cliente começa com 0 vendas
+            setClientes([...clientes, { ...novo, vendas: [{ count: 0 }] }].sort((a,b) => a.nome.localeCompare(b.nome)))
             alert("Cliente cadastrado!")
         }
         setIsModalOpen(false)
@@ -202,7 +202,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
   return (
     <>
-      {/* BARRA DE TOPO COM BUSCA E BOTÃO */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
         <div className="w-full md:w-1/3">
             <input 
@@ -219,7 +218,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         </button>
       </div>
 
-      {/* LISTA DESKTOP USANDO CLIENTES FILTRADOS */}
+      {/* LISTA DESKTOP */}
       <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -238,10 +237,16 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                     </tr>
                 )}
                 {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors group ">
+                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors groupCursor-pointer">
                     <td className="p-4">
                         <span className="block font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{cliente.nome}</span>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block bg-gray-100 text-gray-500">{cliente.tipo}</span>
+                        <div className="flex gap-2 mt-1">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">{cliente.tipo}</span>
+                            {/* CONTADOR DE VENDAS */}
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">
+                                {cliente.vendas?.length || 0} compras
+                            </span>
+                        </div>
                     </td>
                     <td className="p-4 text-sm text-gray-600">
                         <div className="font-mono">{cliente.telefone || '-'}</div>
@@ -260,16 +265,22 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         </div>
       </div>
 
-      {/* LISTA MOBILE USANDO CLIENTES FILTRADOS */}
+      {/* LISTA MOBILE */}
       <div className="md:hidden space-y-4">
         {clientesFiltrados.length === 0 && <p className="text-center text-gray-400">Nenhum cliente encontrado.</p>}
         
         {clientesFiltrados.map((cliente) => (
-            <div key={cliente.id} onClick={() => abrirCliente(cliente)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform ">
+            <div key={cliente.id} onClick={() => abrirCliente(cliente)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform">
                 <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-bold text-gray-900 text-lg">{cliente.nome}</h3>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded mt-1 inline-block bg-gray-100 text-gray-500">{cliente.tipo}</span>
+                        <div className="flex gap-2 mt-1">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">{cliente.tipo}</span>
+                            {/* CONTADOR DE VENDAS MOBILE */}
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">
+                                {cliente.vendas?.length || 0} compras
+                            </span>
+                        </div>
                     </div>
                     <span className="text-gray-300 font-bold">➔</span>
                 </div>
@@ -281,7 +292,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         ))}
       </div>
 
-      {/* MODAL (Sem alterações no código interno) */}
+      {/* MODAL (Sem alterações) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-hidden">
             <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -391,7 +402,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                     )}
 
                                     {historicoVendas.map(venda => (
-                                        <div key={venda.id} onClick={() => router.push(`/vendas/${venda.id}`)} className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 hover:bg-blue-50  transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group shadow-sm">
+                                        <div key={venda.id} onClick={() => router.push(`/vendas/${venda.id}`)} className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 hover:bg-blue-50  transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group shadow-sm cursor-pointer">
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">#{venda.id}</span>
