@@ -6,7 +6,7 @@ export default function ConfiguracoesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   
-  // Estado do Form
+  // Estado do Form - Dados Jurídicos
   const [empresaId, setEmpresaId] = useState<string | null>(null)
   const [razao, setRazao] = useState('')
   const [fantasia, setFantasia] = useState('')
@@ -14,7 +14,7 @@ export default function ConfiguracoesPage() {
   const [ie, setIe] = useState('')
   const [email, setEmail] = useState('')
   
-  // Endereço
+  // Estado do Form - Endereço
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState('')
   const [numero, setNumero] = useState('')
@@ -22,6 +22,11 @@ export default function ConfiguracoesPage() {
   const [bairro, setBairro] = useState('')
   const [cidade, setCidade] = useState('Florianópolis')
   const [estado, setEstado] = useState('SC')
+
+  // NOVO: Estado do Form - Custos e Parâmetros
+  const [custoAluguel, setCustoAluguel] = useState('')
+  const [custoRt, setCustoRt] = useState('') // Responsável Técnico
+  const [impostoPadrao, setImpostoPadrao] = useState('')
 
   // Máscara CNPJ
   const maskCNPJ = (v: string) => {
@@ -36,11 +41,15 @@ export default function ConfiguracoesPage() {
       const { data } = await supabase.from('Empresa').select('*').single()
       if (data) {
         setEmpresaId(data.id)
+        
+        // Jurídico
         setRazao(data.razao_social || '')
         setFantasia(data.nome_fantasia || '')
         setCnpj(data.cnpj || '')
         setIe(data.inscricao_estadual || '')
         setEmail(data.email_contato || '')
+        
+        // Endereço
         setCep(data.cep || '')
         setEndereco(data.endereco || '')
         setNumero(data.numero || '')
@@ -48,6 +57,11 @@ export default function ConfiguracoesPage() {
         setBairro(data.bairro || '')
         setCidade(data.cidade || '')
         setEstado(data.estado || '')
+
+        // Custos (Convertendo number para string para o input)
+        setCustoAluguel(data.custo_aluguel ? String(data.custo_aluguel) : '')
+        setCustoRt(data.custo_rt ? String(data.custo_rt) : '')
+        setImpostoPadrao(data.imposto_padrao ? String(data.imposto_padrao) : '')
       }
       setLoading(false)
     }
@@ -60,23 +74,35 @@ export default function ConfiguracoesPage() {
     setSaving(true)
 
     const payload = {
-        razao_social: razao, nome_fantasia: fantasia, cnpj, inscricao_estadual: ie, email_contato: email,
-        cep, endereco, numero, complemento, bairro, cidade, estado
+        razao_social: razao, 
+        nome_fantasia: fantasia, 
+        cnpj, 
+        inscricao_estadual: ie, 
+        email_contato: email,
+        cep, 
+        endereco, 
+        numero, 
+        complemento, 
+        bairro, 
+        cidade, 
+        estado,
+        // Novos Campos (Garante que vai como null se estiver vazio)
+        custo_aluguel: custoAluguel ? Number(custoAluguel) : null,
+        custo_rt: custoRt ? Number(custoRt) : null,
+        imposto_padrao: impostoPadrao ? Number(impostoPadrao) : null
     }
 
     try {
         if (empresaId) {
-            // Atualiza
             const { error } = await supabase.from('Empresa').update(payload).eq('id', empresaId)
             if (error) throw error
         } else {
-            // Cria (primeira vez)
             const { error } = await supabase.from('Empresa').insert(payload)
             if (error) throw error
         }
-        alert("Dados da empresa salvos com sucesso!")
+        alert("Configurações atualizadas com sucesso!")
     } catch (err: any) {
-        alert("Erro: " + err.message)
+        alert("Erro ao salvar: " + err.message)
     } finally {
         setSaving(false)
     }
@@ -100,11 +126,11 @@ export default function ConfiguracoesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Razão Social</label>
-                    <input required value={razao} onChange={e => setRazao(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" placeholder="Raffinato Bebidas LTDA" />
+                    <input required value={razao} onChange={e => setRazao(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" placeholder="Razão Social LTDA" />
                 </div>
                 <div>
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Nome Fantasia</label>
-                    <input value={fantasia} onChange={e => setFantasia(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" placeholder="Raffinato" />
+                    <input value={fantasia} onChange={e => setFantasia(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" placeholder="Nome Fantasia" />
                 </div>
                 <div>
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">CNPJ</label>
@@ -144,13 +170,11 @@ export default function ConfiguracoesPage() {
                     <input value={complemento} onChange={e => setComplemento(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" />
                 </div>
                 
-                {/* BAIRRO - Agora ocupa 2 colunas */}
                 <div className="md:col-span-2">
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Bairro</label>
                     <input value={bairro} onChange={e => setBairro(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" />
                 </div>
 
-                {/* CIDADE/UF - CORREÇÃO: Agora ocupa 2 colunas (md:col-span-2) */}
                 <div className="md:col-span-2">
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Cidade / UF</label>
                     <div className="flex gap-2">
@@ -161,14 +185,70 @@ export default function ConfiguracoesPage() {
             </div>
         </section>
 
+        {/* NOVA SEÇÃO: CUSTOS E PARÂMETROS */}
+        <section className="bg-white p-6 md:p-8 rounded-3xl border border-orange-200 shadow-sm relative overflow-hidden">
+            {/* Aviso de Desenvolvimento */}
+            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 rounded-r">
+                <div className="flex items-start">
+                    <div className="ml-1">
+                        <h3 className="text-orange-800 font-bold text-sm uppercase tracking-wide">🚧 Em Desenvolvimento</h3>
+                        <p className="text-orange-700 text-xs mt-1 leading-relaxed">
+                            <strong>Em Desenvolvimento</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                Custos Fixos & Parâmetros
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Aluguel (R$)</label>
+                    <input 
+                        type="number" 
+                        step="0.01"
+                        value={custoAluguel} 
+                        onChange={e => setCustoAluguel(e.target.value)} 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" 
+                        placeholder="0,00" 
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Responsável Técnico (R$)</label>
+                    <input 
+                        type="number" 
+                        step="0.01"
+                        value={custoRt} 
+                        onChange={e => setCustoRt(e.target.value)} 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" 
+                        placeholder="0,00" 
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Imposto Padrão (%)</label>
+                    <input 
+                        type="number" 
+                        step="0.1"
+                        value={impostoPadrao} 
+                        onChange={e => setImpostoPadrao(e.target.value)} 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" 
+                        placeholder="Ex: 4.5" 
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1 font-bold">Porcentagem sobre a venda (Simples Nacional)</p>
+                </div>
+            </div>
+        </section>
+
         {/* BOTÃO SALVAR */}
         <div className="flex justify-end">
             <button 
                 type="submit" 
                 disabled={saving}
-                className="bg-green-600 cursor-pointer hover:bg-green-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all disabled:opacity-50 w-full md:w-auto text-lg"
+                className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all disabled:opacity-50 w-full md:w-auto text-lg cursor-pointer"
             >
-                {saving ? 'Salvando...' : 'Salvar Configurações'}
+                {saving ? 'Salvando...' : 'Salvar Todas Configurações'}
             </button>
         </div>
 
