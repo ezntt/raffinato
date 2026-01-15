@@ -237,7 +237,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                     </tr>
                 )}
                 {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors groupCursor-pointer">
+                  <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 cursor-pointer transition-colors groupCursor-pointer">
                     <td className="p-4">
                         <span className="block font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{cliente.nome}</span>
                         <div className="flex gap-2 mt-1">
