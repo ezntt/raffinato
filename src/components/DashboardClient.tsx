@@ -115,24 +115,6 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </header>
 
-      {/* 1. TANQUES */}
-      <section className="mb-10">
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Em Maturação (Tanques)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-all">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-bold text-lg">💧</div><span className="font-bold text-gray-600">Limoncello (Granel)</span></div>
-              <div className="text-4xl font-black text-gray-900">{tanques.limoncello.toFixed(1)} <span className="text-lg text-gray-400 font-bold">Litros</span></div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-orange-200 transition-all">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 font-bold text-lg">💧</div><span className="font-bold text-gray-600">Arancello (Granel)</span></div>
-              <div className="text-4xl font-black text-gray-900">{tanques.arancello.toFixed(1)} <span className="text-lg text-gray-400 font-bold">Litros</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* 2. PRATELEIRA */}
       <section className="mb-12">
@@ -162,6 +144,25 @@ export function DashboardClient({ lotes, estoque }: Props) {
         </div>
       </section>
 
+      {/* 1. TANQUES */}
+      <section className="mb-10">
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Em Maturação (Tanques)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-all">
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-bold text-lg">💧</div><span className="font-bold text-gray-600">Limoncello (Granel)</span></div>
+              <div className="text-4xl font-black text-gray-900">{tanques.limoncello.toFixed(1)} <span className="text-lg text-gray-400 font-bold">Litros</span></div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-orange-200 transition-all">
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 font-bold text-lg">💧</div><span className="font-bold text-gray-600">Arancello (Granel)</span></div>
+              <div className="text-4xl font-black text-gray-900">{tanques.arancello.toFixed(1)} <span className="text-lg text-gray-400 font-bold">Litros</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
       {/* 3. ESTATÍSTICAS */}
       <section>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estatísticas Gerais</h2>
