@@ -19,13 +19,21 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const [historicoVendas, setHistoricoVendas] = useState<any[]>([])
   const [loadingHistorico, setLoadingHistorico] = useState(false)
 
+  // === BUSCA ===
+  const [busca, setBusca] = useState('')
+
+  // Filtra clientes pelo nome (busca)
+  const clientesFiltrados = clientes.filter(c => 
+    c.nome.toLowerCase().includes(busca.toLowerCase())
+  )
+
   // === CAMPOS DO FORMULÁRIO ===
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [tipo, setTipo] = useState('PF') 
   const [email, setEmail] = useState('')
   const [cpfCnpj, setCpfCnpj] = useState('')
-  const [inscricaoEstadual, setInscricaoEstadual] = useState('') // NOVO CAMPO
+  const [inscricaoEstadual, setInscricaoEstadual] = useState('')
   
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState('')
@@ -55,22 +63,19 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
       const limpo = v.replace(/\D/g, "")
       
       if (tipo === 'PF') {
-          // Lógica CPF (Mantida)
           setCpfCnpj(limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4").substring(0, 14))
       } else {
-          // Lógica CNPJ
           const formatado = limpo.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
           setCpfCnpj(formatado)
 
-          // BUSCA DE CNPJ (NOVIDADE)
           if (limpo.length === 14) {
               setBuscandoDados(true)
               try {
                   const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`)
                   const data = await res.json()
                   
-                  if (!data.message) { // Se não houver erro
-                      if(!nome) setNome(data.razao_social || data.nome_fantasia) // Só preenche se vazio para não sobrescrever edição
+                  if (!data.message) { 
+                      if(!nome) setNome(data.razao_social || data.nome_fantasia)
                       setCep(data.cep || '')
                       setEndereco(data.logradouro || '')
                       setNumero(data.numero || '')
@@ -78,7 +83,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                       setCidade(data.municipio || '')
                       setEstado(data.uf || '')
                       setComplemento(data.complemento || '')
-                      // Tenta focar no número se ele veio vazio
                       if(!data.numero) document.getElementById('inputNumero')?.focus()
                   }
               } catch (error) {
@@ -127,12 +131,11 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   }
 
   const abrirCliente = async (c: any) => {
-    // 1. Preenche dados
     setModoEdicao(true)
     setIdEdicao(c.id)
     setNome(c.nome); setTelefone(c.telefone || ''); setTipo(c.tipo || 'PF')
     setEmail(c.email || ''); setCpfCnpj(c.cpf_cnpj || '')
-    setInscricaoEstadual(c.inscricao_estadual || '') // Carrega IE se existir
+    setInscricaoEstadual(c.inscricao_estadual || '')
     
     setCep(c.cep || ''); setEndereco(c.endereco || ''); setNumero(c.numero || '')
     setBairro(c.bairro || ''); setCidade(c.cidade || ''); setEstado(c.estado || '')
@@ -140,7 +143,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
     
     setIsModalOpen(true)
 
-    // 2. Busca histórico COM ITENS (JOIN)
     setLoadingHistorico(true)
     try {
         const { data, error } = await supabase
@@ -173,7 +175,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
     const payload = {
         nome, telefone, tipo, email, cpf_cnpj: cpfCnpj,
-        inscricao_estadual: tipo === 'PJ' ? inscricaoEstadual : null, // Só envia se for PJ
+        inscricao_estadual: tipo === 'PJ' ? inscricaoEstadual : null,
         cep, endereco, numero, bairro, cidade, estado, complemento
     }
 
@@ -200,13 +202,24 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
   return (
     <>
-      <div className="flex justify-end mb-4">
+      {/* BARRA DE TOPO COM BUSCA E BOTÃO */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+        <div className="w-full md:w-1/3">
+            <input 
+                type="text" 
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar cliente por nome..." 
+                className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 shadow-sm"
+            />
+        </div>
+        
         <button onClick={abrirNovo} className="bg-black cursor-pointer hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 w-full md:w-auto justify-center">
             <span>+ Novo Cliente</span>
         </button>
       </div>
 
-      {/* LISTA DESKTOP */}
+      {/* LISTA DESKTOP USANDO CLIENTES FILTRADOS */}
       <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -219,7 +232,12 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {clientes.map((cliente) => (
+                {clientesFiltrados.length === 0 && (
+                    <tr>
+                        <td colSpan={4} className="p-8 text-center text-gray-400">Nenhum cliente encontrado.</td>
+                    </tr>
+                )}
+                {clientesFiltrados.map((cliente) => (
                   <tr key={cliente.id} onClick={() => abrirCliente(cliente)} className="hover:bg-blue-50 transition-colors group cursor-pointer">
                     <td className="p-4">
                         <span className="block font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{cliente.nome}</span>
@@ -242,9 +260,11 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         </div>
       </div>
 
-      {/* LISTA MOBILE */}
+      {/* LISTA MOBILE USANDO CLIENTES FILTRADOS */}
       <div className="md:hidden space-y-4">
-        {clientes.map((cliente) => (
+        {clientesFiltrados.length === 0 && <p className="text-center text-gray-400">Nenhum cliente encontrado.</p>}
+        
+        {clientesFiltrados.map((cliente) => (
             <div key={cliente.id} onClick={() => abrirCliente(cliente)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer">
                 <div className="flex justify-between items-start">
                     <div>
@@ -261,7 +281,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
         ))}
       </div>
 
-      {/* MODAL UNIFICADO */}
+      {/* MODAL (Sem alterações no código interno) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-hidden">
             <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -273,7 +293,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                 
                 <div className="flex-1 overflow-y-auto p-6">
                     <form onSubmit={handleSalvar} className="space-y-8">
-                        
                         {/* DADOS CADASTRAIS */}
                         <div className="space-y-6">
                             <div className="space-y-4">
@@ -356,7 +375,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                             </button>
                         </div>
 
-                        {/* SEÇÃO 2: HISTÓRICO VISUAL */}
+                        {/* HISTÓRICO VISUAL */}
                         {modoEdicao && (
                             <div className="border-t-2 border-dashed border-gray-200 pt-8 mt-8">
                                 <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
@@ -397,7 +416,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                 </div>
                             </div>
                         )}
-
                     </form>
                 </div>
             </div>
