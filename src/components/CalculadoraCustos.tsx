@@ -105,7 +105,7 @@ const ModalDetalhes = ({ data, onClose }: { data: any, onClose: () => void }) =>
                     {/* SEÇÃO LÍQUIDO */}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <div className="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
-                            <span className="font-bold text-gray-900 uppercase text-xs">💧 Líquido (Insumos)</span>
+                            <span className="font-bold text-gray-900 uppercase text-xs">Líquido (Insumos)</span>
                             <span className="font-black text-gray-900 text-sm">R$ {data.liquido.total.toFixed(2)}</span>
                         </div>
                         <div className="space-y-1 text-xs text-gray-600">
@@ -116,8 +116,8 @@ const ModalDetalhes = ({ data, onClose }: { data: any, onClose: () => void }) =>
 
                     {/* SEÇÃO EMBALAGEM */}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <div className="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
-                            <span className="font-bold text-gray-900 uppercase text-xs">📦 Embalagem</span>
+                        <div className="    flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
+                            <span className="font-bold text-gray-900 uppercase text-xs">Embalagem</span>
                             <span className="font-black text-gray-900 text-sm">R$ {data.embalagem.total.toFixed(2)}</span>
                         </div>
                         <div className="space-y-1 text-xs text-gray-600">
@@ -131,14 +131,10 @@ const ModalDetalhes = ({ data, onClose }: { data: any, onClose: () => void }) =>
                     {/* NOVA SEÇÃO: CUSTOS FIXOS */}
                     <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
                         <div className="flex justify-between items-center mb-2 border-b border-purple-200 pb-2">
-                            <span className="font-bold text-purple-900 uppercase text-xs">🏢 Rateio Despesas</span>
+                            <span className="font-bold text-purple-900 uppercase text-xs">Rateio Despesas</span>
                             <span className="font-black text-purple-900 text-sm">R$ {data.fixo.toFixed(2)}</span>
                         </div>
-                        <div className="text-[10px] text-purple-700 leading-tight">
-                            Valor baseado na simulação de vendas. Quanto mais você vende, menor este valor fica por unidade.
-                        </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -337,22 +333,27 @@ export function CalculadoraCustos() {
 
       {showInfo && (
           <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 text-blue-900 mb-8 animate-in slide-in-from-top-2 duration-300">
-              <h3 className="font-bold text-lg mb-3 flex items-center gap-2">🧮 Como o custo da garrafa é calculado?</h3>
-              <p className="text-sm mb-4 leading-relaxed">
-                  O valor exibido nos cards é a soma do <strong>Custo Variável (Produto)</strong> + <strong>Custo Fixo Rateado</strong>.
-              </p>
+              <h3 className="font-bold text-lg mb-3 flex items-center gap-2">Composição Detalhada do Custo</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs bg-white/60 p-4 rounded-xl">
-                  <div>
-                      <span className="font-bold uppercase text-blue-400 block mb-2">1. Líquido</span>
-                      <ul className="space-y-1"><li>• Álcool e Açúcar (proporcional à receita).</li></ul>
+                  <div> 
+                      <span className="font-bold uppercase text-blue-600 block mb-2">1. Líquido (Ficha Técnica)</span>
+                      <ul className="space-y-2 text-gray-600">
+                          <li>• <strong>Álcool (29,17%):</strong> O sistema calcula exatamente <strong>218,78ml</strong> (Garrafa 750ml) ou <strong>109,39ml</strong> (Garrafa 375ml).</li>
+                          <li>• <strong>Açúcar (Xarope):</strong> Considera <strong>183g</strong> (750ml) ou <strong>91,5g</strong> (375ml) por unidade.</li>
+                      </ul>
                   </div>
                   <div>
-                      <span className="font-bold uppercase text-blue-400 block mb-2">2. Embalagem</span>
-                      <ul className="space-y-1"><li>• Vidro, Tampa, Rótulo, etc.</li></ul>
+                      <span className="font-bold uppercase text-blue-600 block mb-2">2. Embalagem (Custo Direto)</span>
+                      <ul className="space-y-2 text-gray-600">
+                          <li>• Soma exata dos custos unitários de compra inseridos:</li>
+                          <li className="font-medium">Garrafa + Tampa + Rótulo + Lacre + Selo IPI.</li>
+                      </ul>
                   </div>
                   <div>
-                      <span className="font-bold uppercase text-purple-500 block mb-2">3. Rateio Fixo</span>
-                      <ul className="space-y-1"><li>• Soma das despesas / Garrafas vendidas no mês (simulação).</li></ul>
+                      <span className="font-bold uppercase text-purple-600 block mb-2">3. Rateio Operacional</span>
+                      <ul className="space-y-2 text-gray-600">
+                          <li>• <strong>Fórmula:</strong> (Soma de Todas as Despesas Fixas) ÷ (Previsão de Vendas).</li>
+                      </ul>
                   </div>
               </div>
           </div>
@@ -391,8 +392,7 @@ export function CalculadoraCustos() {
           {/* MATÉRIA PRIMA */}
           <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden h-fit">
               <div className="p-6 border-b border-gray-100 bg-gray-50">
-                  <h2 className="font-bold text-gray-900 text-sm">🍋 Matéria Prima (Custo Unitário)</h2>
-                  <p className="text-xs text-gray-400 mt-1">Tecle ENTER ou clique no ✔ para salvar um item.</p>
+                  <h2 className="font-bold text-gray-900 text-sm">Matéria Prima (Custo Unitário)</h2>
               </div>
               <div className="p-6 grid grid-cols-2 gap-4">
                  {insumos.map((item) => (
@@ -410,8 +410,7 @@ export function CalculadoraCustos() {
           {/* DESPESAS FIXAS */}
           <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden h-fit">
               <div className="p-6 border-b border-gray-100 bg-gray-50">
-                  <h2 className="font-bold text-gray-900 text-sm">🏢 Despesas Fixas / Operacionais</h2>
-                  <p className="text-xs text-gray-400 mt-1">Custos mensais da operação.</p>
+                  <h2 className="font-bold text-gray-900 text-sm">Despesas Fixas / Operacionais</h2>
               </div>
               <div className="p-6">
                 
