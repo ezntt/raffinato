@@ -121,13 +121,13 @@ export function DashboardClient({ lotes, estoque }: Props) {
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span>Pronta Entrega (Estoque Atual)</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-yellow-50 p-8 rounded-3xl border border-yellow-100 relative overflow-hidden">
-            <div className="relative z-10">
+            <div className="cursor-pointer relative z-10">
               <h3 className="text-xl font-black text-yellow-900 mb-6 flex items-center gap-2">🍋 Limoncello</h3>
               <div className="space-y-2"><StockRow produto="limoncello" tamanho={750} colorText="text-yellow-600" /><StockRow produto="limoncello" tamanho={375} colorText="text-yellow-600" /></div>
             </div>
           </div>
           <div className="bg-orange-50 p-8 rounded-3xl border border-orange-100 relative overflow-hidden">
-            <div className="relative z-10">
+            <div className="cursor-pointer relative z-10">
               <h3 className="text-xl font-black text-orange-900 mb-6 flex items-center gap-2">🍊 Arancello</h3>
               <div className="space-y-2"><StockRow produto="arancello" tamanho={750} colorText="text-orange-600" /><StockRow produto="arancello" tamanho={375} colorText="text-orange-600" /></div>
             </div>

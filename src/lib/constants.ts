@@ -17,6 +17,8 @@ export const NOME_INSUMO = {
     
     TAMPA: 'Tampa',
     LACRE: 'Lacre',
+    SELO: 'Selo',
+    // adicionar selo premium? TODO
 
     LIMAO: 'Limão Siciliano',
     LARANJA: 'Laranja',

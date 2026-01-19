@@ -133,6 +133,10 @@ export function Sidebar() {
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             Histórico de Vendas
           </Link>
+          <Link href="/custos" onClick={closeMenu} className={`px-8 py-4 flex items-center gap-3 font-bold transition-all ${isActive('/custos')}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Custos e Precificação
+          </Link>
           <Link 
             href="/configuracoes" 
             onClick={closeMenu} 
