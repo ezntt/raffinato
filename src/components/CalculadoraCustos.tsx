@@ -385,7 +385,7 @@ export function CalculadoraCustos() {
                       <span className="font-bold uppercase text-blue-600 block mb-2">2. Embalagem (Custo Direto)</span>
                       <ul className="space-y-2 text-gray-600">
                           <li>• Soma exata dos custos unitários de compra inseridos:</li>
-                          <li className="font-medium">Garrafa + Tampa + Rótulo + Lacre + Selo IPI.</li>
+                          <li className="font-medium">Garrafa + Tampa + Rótulo + Lacre + Selo.</li>
                       </ul>
                   </div>
                   <div>
