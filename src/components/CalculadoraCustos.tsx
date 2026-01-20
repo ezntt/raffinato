@@ -111,12 +111,13 @@ const ModalDetalhes = ({ data, onClose }: { data: any, onClose: () => void }) =>
                         <div className="space-y-1 text-xs text-gray-600">
                             <div className="flex justify-between"><span>Álcool ({data.liquido.volAlcool}ml)</span><span className="font-mono font-bold">R$ {data.liquido.custoAlcool.toFixed(2)}</span></div>
                             <div className="flex justify-between"><span>Açúcar ({data.liquido.volAcucar}kg)</span><span className="font-mono font-bold">R$ {data.liquido.custoAcucar.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>{data.liquido.nomeFruta}</span><span className="font-mono font-bold">R$ {data.liquido.custoFruta.toFixed(2)}</span></div>
                         </div>
                     </div>
 
                     {/* SEÇÃO EMBALAGEM */}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <div className="    flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
+                        <div className="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
                             <span className="font-bold text-gray-900 uppercase text-xs">Embalagem</span>
                             <span className="font-black text-gray-900 text-sm">R$ {data.embalagem.total.toFixed(2)}</span>
                         </div>
@@ -134,7 +135,11 @@ const ModalDetalhes = ({ data, onClose }: { data: any, onClose: () => void }) =>
                             <span className="font-bold text-purple-900 uppercase text-xs">Rateio Despesas</span>
                             <span className="font-black text-purple-900 text-sm">R$ {data.fixo.toFixed(2)}</span>
                         </div>
+                        <div className="text-[10px] text-purple-700 leading-tight">
+                            Valor baseado na simulação de vendas. Quanto mais você vende, menor este valor fica por unidade.
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -150,13 +155,13 @@ const FORMULA = {
   A375: { alcool_ml: 109.39, acucar_kg: 0.0915 },
 }
 
+// Lista exata de insumos que devem aparecer (LIMAO E LARANJA REMOVIDOS)
 const ITENS_PERMITIDOS = [
   NOME_INSUMO.GARRAFA_750, NOME_INSUMO.GARRAFA_375,
   NOME_INSUMO.TAMPA, NOME_INSUMO.LACRE, NOME_INSUMO.SELO,
   NOME_INSUMO.ROTULO_LIMONCELLO_750, NOME_INSUMO.ROTULO_LIMONCELLO_375,
   NOME_INSUMO.ROTULO_ARANCELLO_750, NOME_INSUMO.ROTULO_ARANCELLO_375,
   NOME_INSUMO.ALCOOL, NOME_INSUMO.ACUCAR,
-  NOME_INSUMO.LIMAO, NOME_INSUMO.LARANJA
 ]
 
 export function CalculadoraCustos() {
@@ -178,8 +183,12 @@ export function CalculadoraCustos() {
     rt: '', contribSocial: '', tributos: ''
   })
   
-  // NOVO ESTADO: Simulação de Vendas
+  // Simulação de Vendas
   const [garrafasVendidas, setGarrafasVendidas] = useState('')
+
+  // ESTADO FRUTAS (MANUAL)
+  const [custoLimao, setCustoLimao] = useState<string>('')
+  const [custoLaranja, setCustoLaranja] = useState<string>('')
 
   useEffect(() => {
     fetchData()
@@ -208,10 +217,17 @@ export function CalculadoraCustos() {
                 contribSocial: emp.custo_contribuicao_social ? String(emp.custo_contribuicao_social) : '',
                 tributos: emp.custo_tributos ? String(emp.custo_tributos) : '',
             })
+            // Recupera valores salvos das frutas
+            const savedLimao = localStorage.getItem('custoLimao')
+            if (savedLimao) setCustoLimao(savedLimao)
+            
+            const savedLaranja = localStorage.getItem('custoLaranja')
+            if (savedLaranja) setCustoLaranja(savedLaranja)
         }
     } catch (err) { console.error(err) } finally { setLoading(false) }
   }
 
+  // Handlers
   const handlePrecoChange = (nome: string, val: string) => setPrecos(prev => ({ ...prev, [nome]: val }))
   const handleDespesaChange = (campo: string, val: string) => setDespesas(prev => ({ ...prev, [campo]: val }))
 
@@ -246,12 +262,18 @@ export function CalculadoraCustos() {
       } catch (err) { alert("Erro ao salvar despesa") }
   }
 
+  const salvarFrutas = async () => {
+      localStorage.setItem('custoLimao', custoLimao)
+      localStorage.setItem('custoLaranja', custoLaranja)
+  }
+
   const handleSalvarTudo = async () => {
     setSaving(true)
     try {
         for (const item of insumos) { await salvarInsumoUnico(item) }
         const keys = Object.keys(despesas)
         for (const k of keys) { await salvarDespesaUnica(k) }
+        salvarFrutas()
         alert("Todos os dados foram salvos!")
     } catch(err) { alert("Erro ao salvar tudo") }
     finally { setSaving(false) }
@@ -278,7 +300,23 @@ export function CalculadoraCustos() {
       const ref = tamanho === 750 ? FORMULA.L750 : FORMULA.L375
       const custoAlcool = (ref.alcool_ml / 1000) * getVal(NOME_INSUMO.ALCOOL)
       const custoAcucar = ref.acucar_kg * getVal(NOME_INSUMO.ACUCAR)
-      const totalLiquido = custoAlcool + custoAcucar
+      
+      // Fruta (Lógica Diferenciada)
+      let custoFrutaBase = 0
+      let nomeFruta = ''
+      
+      if (tipo === 'L') {
+          custoFrutaBase = parseFloat(custoLimao.replace(',', '.')) || 0
+          nomeFruta = 'Limão Siciliano'
+      } else {
+          custoFrutaBase = parseFloat(custoLaranja.replace(',', '.')) || 0
+          nomeFruta = 'Laranja'
+      }
+      
+      // Regra: 750ml = Custo Cheio | 375ml = Metade
+      const custoFruta = tamanho === 750 ? custoFrutaBase : (custoFrutaBase / 2)
+
+      const totalLiquido = custoAlcool + custoAcucar + custoFruta
 
       // 3. Rateio (Custos Fixos)
       const totalDespesas = Object.values(despesas).reduce((acc, val) => acc + (parseFloat(val.replace(',', '.')) || 0), 0)
@@ -292,7 +330,7 @@ export function CalculadoraCustos() {
           titulo,
           corBg,
           total: totalFinal,
-          liquido: { total: totalLiquido, custoAlcool, volAlcool: ref.alcool_ml, custoAcucar, volAcucar: ref.acucar_kg },
+          liquido: { total: totalLiquido, custoAlcool, volAlcool: ref.alcool_ml, custoAcucar, volAcucar: ref.acucar_kg, custoFruta, nomeFruta },
           embalagem: { total: totalEmbalagem, garrafa, tampa, lacre, selo, rotulo },
           fixo: custoFixoPorGarrafa
       }
@@ -340,6 +378,7 @@ export function CalculadoraCustos() {
                       <ul className="space-y-2 text-gray-600">
                           <li>• <strong>Álcool (29,17%):</strong> O sistema calcula exatamente <strong>218,78ml</strong> (Garrafa 750ml) ou <strong>109,39ml</strong> (Garrafa 375ml).</li>
                           <li>• <strong>Açúcar (Xarope):</strong> Considera <strong>183g</strong> (750ml) ou <strong>91,5g</strong> (375ml) por unidade.</li>
+                          <li>• <strong>Fruta:</strong> Custo da fruta para a garrafa de 750ml, e metade para 375ml.</li>
                       </ul>
                   </div>
                   <div>
@@ -395,6 +434,24 @@ export function CalculadoraCustos() {
                   <h2 className="font-bold text-gray-900 text-sm">Matéria Prima (Custo Unitário)</h2>
               </div>
               <div className="p-6 grid grid-cols-2 gap-4">
+                 {/* Input de Limão (Novo) */}
+                 <InputMoney 
+                    label="Limão (Custo p/ 750ml)" 
+                    val={custoLimao} 
+                    onChange={setCustoLimao} 
+                    onSave={salvarFrutas} 
+                    placeholder="0.00" 
+                 />
+                 
+                 {/* Input de Laranja (Novo) */}
+                 <InputMoney 
+                    label="Laranja (Custo p/ 750ml)" 
+                    val={custoLaranja} 
+                    onChange={setCustoLaranja} 
+                    onSave={salvarFrutas} 
+                    placeholder="0.00" 
+                 />
+                 
                  {insumos.map((item) => (
                      <InputMoney 
                         key={item.id}
@@ -427,7 +484,6 @@ export function CalculadoraCustos() {
                         />
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-purple-400 uppercase">Garrafas</span>
                     </div>
-                    <p className="text-[10px] text-purple-400 mt-2 font-medium">Insira a quantidade de vendas prevista para calcular o rateio das despesas.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -438,6 +494,13 @@ export function CalculadoraCustos() {
                     <InputMoney label="Responsável Técnico" val={despesas.rt} onChange={(v: string) => handleDespesaChange('rt', v)} onSave={() => salvarDespesaUnica('rt')} />
                     <InputMoney label="Contrib. Social" val={despesas.contribSocial} onChange={(v: string) => handleDespesaChange('contribSocial', v)} onSave={() => salvarDespesaUnica('contribSocial')} />
                     <InputMoney label="Tributos (Diversos)" val={despesas.tributos} onChange={(v: string) => handleDespesaChange('tributos', v)} onSave={() => salvarDespesaUnica('tributos')} />
+                    {/* mostra total das despesas */}
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-900 uppercase mb-1">Total das Despesas</label>
+                        <div className="w-full p-3 bg-blue-50 border border-gray-200 rounded-xl font-bold text-gray-900">
+                            R$ {Object.values(despesas).reduce((acc, val) => acc + (parseFloat(val.replace(',', '.')) || 0), 0).toFixed(2)}
+                        </div>
+                    </div>
                 </div>
               </div>
           </section>
