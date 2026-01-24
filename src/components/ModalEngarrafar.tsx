@@ -22,6 +22,7 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
   const [estRolhas, setEstRolhas] = useState<number>(0)
   const [estRotulos, setEstRotulos] = useState<number>(0)
   const [estLacres, setEstLacres] = useState<number>(0)
+  const [estSelos, setEstSelos] = useState<number>(0) // NOVO
 
   // Função auxiliar para capitalizar (limoncello -> Limoncello)
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
@@ -55,17 +56,20 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
 
             const nomeTampa = NOME_INSUMO.TAMPA
             const nomeLacre = NOME_INSUMO.LACRE
+            const nomeSelo = NOME_INSUMO.SELO // NOVO
 
             // 2. Busca Exata
             const itemGarrafa = data.find(i => i.nome === nomeGarrafa)
             const itemRotulo = data.find(i => i.nome === nomeRotulo)
             const itemTampa = data.find(i => i.nome === nomeTampa)
             const itemLacre = data.find(i => i.nome === nomeLacre)
+            const itemSelo = data.find(i => i.nome === nomeSelo) // NOVO
 
             setEstGarrafas(itemGarrafa?.quantidade_atual || 0)
             setEstRotulos(itemRotulo?.quantidade_atual || 0)
-            setEstRolhas(itemTampa?.quantidade_atual || 0) // Usando variável estRolhas para Tampa
+            setEstRolhas(itemTampa?.quantidade_atual || 0)
             setEstLacres(itemLacre?.quantidade_atual || 0)
+            setEstSelos(itemSelo?.quantidade_atual || 0) // NOVO
         }
     } catch (err) {
         console.error("Erro ao buscar estoque:", err)
@@ -82,9 +86,10 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
   const saldoRotulos = estRotulos - nQtd
   const saldoTampas = estRolhas - nQtd
   const saldoLacres = estLacres - nQtd
+  const saldoSelos = estSelos - nQtd // NOVO
   
   // Verifica se falta algum insumo (para alerta visual)
-  const faltaInsumo = saldoGarrafas < 0 || saldoRotulos < 0 || saldoTampas < 0 || saldoLacres < 0
+  const faltaInsumo = saldoGarrafas < 0 || saldoRotulos < 0 || saldoTampas < 0 || saldoLacres < 0 || saldoSelos < 0 // ATUALIZADO
   
   // Bloqueio Rígido apenas para Líquido
   const faltaLiquido = (lote.volume_atual - litrosGastos) < 0
@@ -105,10 +110,10 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
     setLoading(true)
 
     try {
-      // Chamada RPC atualizada (ver SQL abaixo)
+      // Chamada RPC atualizada
       const { error } = await supabase.rpc('engarrafar_lote', {
         p_lote_id: lote.id,
-        p_produto: lote.produto, // passa 'limoncello' ou 'arancello'
+        p_produto: lote.produto,
         p_tamanho: tamanho,
         p_qtd: nQtd
       })
@@ -186,6 +191,7 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
                 <RowInsumo label={`Rótulo ${capitalize(lote.produto)}`} atual={estRotulos} final={saldoRotulos} />
                 <RowInsumo label="Tampa" atual={estRolhas} final={saldoTampas} />
                 <RowInsumo label="Lacre" atual={estLacres} final={saldoLacres} />
+                <RowInsumo label="Selo" atual={estSelos} final={saldoSelos} />
              </div>
           </div>
 
