@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { NOME_INSUMO } from '@/lib/constants'
+import { NOME_INSUMO, RECEITA } from '@/lib/constants'
 
 export function CalculadoraXarope() {
   const router = useRouter()
@@ -33,9 +33,16 @@ export function CalculadoraXarope() {
 
   // Cálculos de Receita
   const qtdSuco = Number(sucoInput.replace(',', '.')) || 0
-  const qtdAcucarXarope = qtdSuco * 1.0  // 1kg por litro
-  const qtdAguaXarope = qtdSuco * 0.3    // 300ml por litro
-  const volumeAcucar = qtdAcucarXarope * 0.65 // Volume que o açúcar ocupa
+  
+  // 1kg por litro
+  const qtdAcucarXarope = qtdSuco * RECEITA.XAROPE_KG_ACUCAR_POR_L_SUCO 
+  
+  // 300ml por litro
+  const qtdAguaXarope = qtdSuco * RECEITA.XAROPE_L_AGUA_POR_L_SUCO
+  
+  // Volume que o açúcar ocupa
+  const volumeAcucar = qtdAcucarXarope * RECEITA.VOLUME_POR_KG_ACUCAR 
+  
   const volumeFinalXarope = qtdSuco + qtdAguaXarope + volumeAcucar
   const garrafasGeradas = Math.floor(volumeFinalXarope)
   const sobraLiquida = volumeFinalXarope - garrafasGeradas
@@ -116,8 +123,8 @@ export function CalculadoraXarope() {
                     <p className="font-bold uppercase tracking-wider text-gray-400">Proporção da Receita</p>
                     <p>Para cada <b>1L de Suco</b>, acrescenta-se:</p>
                     <ul className="list-disc pl-4 space-y-1 font-bold">
-                        <li>300ml de Água</li>
-                        <li>1kg de Açúcar</li>
+                        <li>{(RECEITA.XAROPE_L_AGUA_POR_L_SUCO * 1000).toFixed(0)}ml de Água</li>
+                        <li>{RECEITA.XAROPE_KG_ACUCAR_POR_L_SUCO}kg de Açúcar</li>
                     </ul>
                 </div>
             </div>

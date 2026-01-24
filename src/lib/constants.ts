@@ -7,6 +7,10 @@ export const RECEITA = {
     AGUA_POR_G_ACUCAR_LIMONCELLO: 2.25,
     FATOR_XAROPE_ARANCELLO: 3.15,
     AGUA_POR_G_ACUCAR_ARANCELLO: 2.50,
+
+    XAROPE_KG_ACUCAR_POR_L_SUCO: 1.0, // 1kg de açúcar para cada 1L de suco
+    XAROPE_L_AGUA_POR_L_SUCO: 0.3,    // 300ml de água para cada 1L de suco
+    VOLUME_POR_KG_ACUCAR: 0.63        // Cada 1kg de açúcar ocupa 0.63L de volume
 }
 
 export const NOME_INSUMO = {
