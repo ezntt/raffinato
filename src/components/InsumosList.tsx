@@ -1,14 +1,12 @@
 "use client"
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ComprasList } from './ComprasList'
-// ModalMaceracao removido daqui
 
 // Definição das Categorias Visuais
 const CATEGORIAS_VISUAIS = {
   MATERIA_PRIMA: { titulo: 'Matéria-Prima', icone: '🍋', cor: 'bg-green-100 text-green-800 border-green-200' },
-  // BASES removido daqui pois irá para LotesList
   VIDROS: { titulo: 'Garrafas & Vidros', icone: '🍾', cor: 'bg-blue-100 text-blue-800 border-blue-200' },
   ROTULOS: { titulo: 'Rótulos', icone: '🏷️', cor: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
   FECHAMENTO: { titulo: 'Tampas & Lacres', icone: '🔒', cor: 'bg-gray-100 text-gray-800 border-gray-200' },
@@ -18,6 +16,9 @@ const CATEGORIAS_VISUAIS = {
 export function InsumosList({ insumos, historico }: { insumos: any[], historico: any[] }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque')
+  
+  // Estado para controlar o Modo de Edição
+  const [isEditing, setIsEditing] = useState(false)
   
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -34,18 +35,13 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
 
   // --- LÓGICA DE CATEGORIZAÇÃO ---
   const insumosAgrupados = useMemo(() => {
-    // Removemos BASES do grupo visível
     const grupos: Record<string, any[]> = {
       MATERIA_PRIMA: [], VIDROS: [], ROTULOS: [], FECHAMENTO: [], EXPEDICAO: []
     }
 
     insumos.forEach(item => {
       const nome = item.nome.toLowerCase()
-      
-      // Se for Base, ignoramos aqui (será mostrado em Lotes)
-      if (nome.includes('base')) {
-        return 
-      }
+      if (nome.includes('base')) return 
 
       if (nome.includes('álcool') || nome.includes('alcool') || nome.includes('açúcar') || nome.includes('acucar') || nome.includes('limão') || nome.includes('laranja')) {
         grupos.MATERIA_PRIMA.push(item)
@@ -53,7 +49,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
         grupos.VIDROS.push(item)
       } else if (nome.includes('rótulo') || nome.includes('rotulo')) {
         grupos.ROTULOS.push(item)
-      } else if (nome.includes('tampa') || nome.includes('lacre') || nome.includes('rolha')) {
+      } else if (nome.includes('tampa') || nome.includes('lacre') || nome.includes('rolha') || nome.includes('selo')) {
         grupos.FECHAMENTO.push(item)
       } else {
         grupos.EXPEDICAO.push(item)
@@ -80,13 +76,44 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
       } catch (err: any) { alert("Erro: " + err.message) } finally { setLoading(false) }
   }
 
+  // --- NOVA FUNÇÃO: ATUALIZAÇÃO MANUAL DIRETA ---
+  const handleManualUpdate = async (id: string, novaQtd: number, nomeItem: string) => {
+    try {
+        await supabase.from('Insumo').update({ quantidade_atual: novaQtd }).eq('id', id)
+        await supabase.from('Logs').insert({
+            categoria: 'ESTOQUE',
+            acao: 'AJUSTE_MANUAL',
+            descricao: `Ajuste manual em ${nomeItem} para ${novaQtd}`
+        })
+        router.refresh()
+    } catch (error) {
+        console.error("Erro ao atualizar", error)
+        alert("Erro ao salvar alteração.")
+    }
+  }
+
   const formatarQuantidade = (valor: number) => {
-      if (!valor) return '0'
+      if (!valor && valor !== 0) return '0'
       const arredondado = Math.floor(valor * 100) / 100
       return arredondado.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
   }
 
+  // --- COMPONENTE DO CARD ---
   const CardInsumo = ({ item }: { item: any }) => {
+      const [localQtd, setLocalQtd] = useState(item.quantidade_atual)
+      const [saving, setSaving] = useState(false)
+
+      useEffect(() => {
+          setLocalQtd(item.quantidade_atual)
+      }, [item.quantidade_atual])
+
+      const onBlurSave = async () => {
+          if (localQtd === item.quantidade_atual) return 
+          setSaving(true)
+          await handleManualUpdate(item.id, Number(localQtd), item.nome)
+          setSaving(false)
+      }
+
       const isNegativo = item.quantidade_atual < 0
       const isBaixo = item.quantidade_atual <= item.estoque_minimo && !isNegativo
       
@@ -101,12 +128,29 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                 <div className="flex gap-1">
                    {isBaixo && (<span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">Baixo</span>)}
                    {isNegativo && (<span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded animate-pulse">NEGATIVO</span>)}
+                   {saving && (<span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded animate-pulse">Salvando...</span>)}
                 </div>
+                
                 <div className="text-right">
-                    <span className={`block text-xl font-black ${isNegativo ? 'text-red-600' : 'text-gray-900'}`}>
-                        {formatarQuantidade(item.quantidade_atual)} 
-                        <small className="text-xs font-bold text-gray-400 ml-0.5">{item.unidade}</small>
-                    </span>
+                    {isEditing ? (
+                        <div className="flex items-center justify-end gap-1">
+                            <input 
+                                type="number" 
+                                step="0.01"
+                                value={localQtd}
+                                onChange={(e) => setLocalQtd(e.target.value)}
+                                onBlur={onBlurSave}
+                                onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur() }}
+                                className="w-24 p-1 text-right font-black text-xl text-gray-900 border-b-2 border-yellow-400 bg-yellow-50 outline-none focus:border-black rounded placeholder-gray-500"
+                            />
+                            <small className="text-xs font-bold text-gray-400">{item.unidade}</small>
+                        </div>
+                    ) : (
+                        <span className={`block text-xl font-black ${isNegativo ? 'text-red-600' : 'text-gray-900'}`}>
+                            {formatarQuantidade(item.quantidade_atual)} 
+                            <small className="text-xs font-bold text-gray-400 ml-0.5">{item.unidade}</small>
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
@@ -134,18 +178,28 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
   return (
     <>
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        {/* Abas */}
         <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
             <button onClick={() => setActiveTab('estoque')} className={`flex-1  md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'estoque' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Estoque Atual</button>
             <button onClick={() => setActiveTab('historico')} className={`flex-1  md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'historico' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Histórico Compras</button>
         </div>
 
-        {/* Botões de Ação */}
         <div className="flex gap-2 w-full md:w-auto">
-            {/* Botão de Maceração Removido daqui */}
+            {activeTab === 'estoque' && (
+                <button 
+                    onClick={() => setIsEditing(!isEditing)}
+                    className={`font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2 justify-center border-2 
+                    ${isEditing 
+                        ? 'bg-yellow-400 border-yellow-500 text-yellow-900 shadow-inner' 
+                        : 'bg-white border-gray-200 text-gray-500 hover:border-black hover:text-black'
+                    }`}
+                >
+                    {isEditing ? 'Concluir Edição' : 'Ajuste Manual'}
+                </button>
+            )}
+
             <button 
                 onClick={() => setModalOpen(true)}
-                className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2  flex-1 md:flex-none justify-center"
+                className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 flex-1 md:flex-none justify-center"
             >
                 <span>Registrar Compra</span>
             </button>
@@ -154,6 +208,12 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
 
       {activeTab === 'estoque' ? (
           <div className="space-y-6 animate-in fade-in duration-300">
+            {isEditing && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-xl text-center text-sm font-bold animate-pulse">
+                    ⚠️ Modo de Edição Ativo: Alterações são salvas automaticamente ao sair do campo.
+                </div>
+            )}
+
             {Object.keys(insumosAgrupados).map(chave => (
                 <SecaoCategoria 
                     key={chave} 
@@ -192,30 +252,29 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
                             })}
                         </select>
                     </div>
-                    {/* Campos de Input restantes mantidos iguais */}
                     <div className="flex gap-4">
                         <div className="flex-1">
                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Qtd {itemSelecionado ? `(${itemSelecionado.unidade})` : ''}</label>
-                            <input type="number" step="0.01" required value={qtdCompra} onChange={e => setQtdCompra(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 font-bold" placeholder="0" />
+                            <input type="number" step="0.01" required value={qtdCompra} onChange={e => setQtdCompra(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 font-bold placeholder-gray-500" placeholder="0" />
                         </div>
                         <div className="flex-1">
                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Total (R$)</label>
-                            <input type="number" step="0.01" required value={valorTotal} onChange={e => setValorTotal(e.target.value)} className="w-full p-3 bg-green-50 border border-green-200 rounded-xl outline-none focus:border-green-500 text-green-900 font-bold" placeholder="0.00" />
+                            <input type="number" step="0.01" required value={valorTotal} onChange={e => setValorTotal(e.target.value)} className="w-full p-3 bg-green-50 border border-green-200 rounded-xl outline-none focus:border-green-500 text-green-900 font-bold placeholder-green-700/50" placeholder="0.00" />
                         </div>
                     </div>
                     <div className="flex gap-4">
                         <div className="flex-1">
                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nº Nota / Pedido</label>
-                            <input value={codigoCompra} onChange={e => setCodigoCompra(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" placeholder="NF 123" />
+                            <input value={codigoCompra} onChange={e => setCodigoCompra(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 placeholder-gray-500" placeholder="NF 123" />
                         </div>
                         <div className="flex-1">
                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Fornecedor</label>
-                            <input value={fornecedor} onChange={e => setFornecedor(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" placeholder="Vidros Sul" />
+                            <input value={fornecedor} onChange={e => setFornecedor(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 placeholder-gray-500" placeholder="Vidros Sul" />
                         </div>
                     </div>
                     <div>
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Observação</label>
-                        <input value={obs} onChange={e => setObs(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" placeholder="Ex: Marca Y" />
+                        <input value={obs} onChange={e => setObs(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900 placeholder-gray-500" placeholder="Ex: Marca Y" />
                     </div>
                     <button type="submit" disabled={loading} className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all disabled:opacity-50 mt-4 ">
                         {loading ? 'Salvando...' : 'Confirmar Compra'}
