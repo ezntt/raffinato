@@ -50,6 +50,13 @@ export function Sidebar() {
   const closeMenu = () => setIsOpen(false)
 
   const handleLogout = async () => {
+    // Log de logout antes de sair
+    await supabase.from('Logs').insert({
+        categoria: 'AUTENTICACAO',
+        acao: 'LOGOUT',
+        descricao: 'Usuário saiu do sistema'
+    })
+    
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()

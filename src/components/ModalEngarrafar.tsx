@@ -105,6 +105,13 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
     if (faltaInsumo) {
         const confirm = window.confirm("⚠️ ATENÇÃO: Alguns insumos ficarão com estoque NEGATIVO. Deseja forçar a produção mesmo assim?")
         if (!confirm) return
+        
+        // Log de estoque negativo antes de forçar
+        await supabase.from('Logs').insert({
+            categoria: 'ALERTA',
+            acao: 'ESTOQUE_NEGATIVO',
+            descricao: `Engarrafamento forçado com estoque negativo - Lote ${lote.id} (${lote.produto}) - ${nQtd} garrafas ${tamanho}ml`
+        })
     }
 
     setLoading(true)
@@ -120,12 +127,26 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
 
       if (error) throw error
 
+      // Log do engarrafamento
+      const volumeRestante = (lote.volume_atual - litrosGastos).toFixed(2)
+      await supabase.from('Logs').insert({
+          categoria: 'PRODUCAO',
+          acao: 'ENGARRAFAMENTO',
+          descricao: `Lote ${lote.id}: ${nQtd} garrafas ${tamanho}ml de ${lote.produto} - Volume restante no tanque: ${volumeRestante}L`
+      })
+
       alert(`Sucesso! ${nQtd} garrafas produzidas. Estoques atualizados.`)
       router.refresh()
       onClose()
       setQtdGarrafas('') 
 
     } catch (err: any) {
+      // Log de erro
+      await supabase.from('Logs').insert({
+          categoria: 'ERRO',
+          acao: 'ERRO_ENGARRAFAMENTO',
+          descricao: `Erro ao engarrafar Lote ${lote.id}: ${err.message} - Tentativa: ${nQtd} garrafas ${tamanho}ml`
+      })
       alert("Erro ao engarrafar: " + err.message)
     } finally {
       setLoading(false)

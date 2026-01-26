@@ -1,5 +1,3 @@
-// src/lib/constants.ts
-
 export const RECEITA = {
     RAZAO_ALCOOL: 29.17 / 100,      
     RAZAO_XAROPE: 70.83 / 100,      

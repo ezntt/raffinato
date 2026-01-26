@@ -248,7 +248,14 @@ export function ModalVenda({ isOpen, onClose }: Props) {
         if (existente) {
             finalClienteId = existente.id
             // Atualiza CPF/CNPJ se faltar
-            if(cpfCnpj) await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj, tipo: tipoCliente }).eq('id', finalClienteId)
+            if(cpfCnpj) {
+                await supabase.from('Cliente').update({ cpf_cnpj: cpfCnpj, tipo: tipoCliente }).eq('id', finalClienteId)
+                await supabase.from('Logs').insert({
+                    categoria: 'CLIENTE',
+                    acao: 'CLIENTE_ATUALIZADO',
+                    descricao: `Cliente ${nome} atualizado - CPF/CNPJ: ${cpfCnpj} (${tipoCliente})`
+                })
+            }
         } else {
             // CRIA NOVO CLIENTE COM DADOS EXTRAS DO CNPJ (SE HOUVER)
             const { data: novo } = await supabase.from('Cliente').insert({ 
@@ -266,6 +273,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                 complemento: dadosExtras.complemento
             }).select().single()
             finalClienteId = novo.id
+            
+            await supabase.from('Logs').insert({
+                categoria: 'CLIENTE',
+                acao: 'CLIENTE_CRIADO',
+                descricao: `Novo cliente criado: ${nome} (${tipoCliente}) - ${telefone}${cpfCnpj ? ` - ${cpfCnpj}` : ''}`
+            })
         }
       }
 
@@ -294,6 +307,14 @@ export function ModalVenda({ isOpen, onClose }: Props) {
 
       if (error) throw error
 
+      // Log da venda
+      const resumoItens = itensVenda.map(i => `${i.quantidade}x ${i.produto} ${i.tamanho}ml`).join(', ')
+      await supabase.from('Logs').insert({
+          categoria: 'VENDA',
+          acao: 'VENDA_REGISTRADA',
+          descricao: `Venda R$ ${Number(valorTotal).toFixed(2)} - Cliente: ${nome} - ${itensVenda.length} item(ns): ${resumoItens} - ${pago ? 'PAGO' : 'PENDENTE'}${observacao ? ` - Obs: ${observacao}` : ''}`
+      })
+
       alert("Venda realizada com sucesso!")
       router.refresh()
       onClose()
@@ -306,6 +327,12 @@ export function ModalVenda({ isOpen, onClose }: Props) {
       setDadosExtras({ cep: '', endereco: '', numero: '', bairro: '', cidade: '', estado: '', complemento: '' })
 
     } catch (error: any) {
+      // Log de erro
+      await supabase.from('Logs').insert({
+          categoria: 'ERRO',
+          acao: 'ERRO_VENDA',
+          descricao: `Erro ao registrar venda: ${error.message} - Cliente: ${nome || 'N/A'} - Valor tentado: R$ ${valorTotal || '0'}`
+      })
       alert("Erro: " + error.message)
     } finally {
       setLoading(false)

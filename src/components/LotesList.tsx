@@ -65,6 +65,16 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
     try {
       const { error } = await supabase.from('Lote').update({ status: 'pronto' }).eq('id', id)
       if (error) throw error
+      
+      // Busca dados do lote para o log
+      const { data: loteData } = await supabase.from('Lote').select('produto, volume_atual').eq('id', id).single()
+      
+      await supabase.from('Logs').insert({
+          categoria: 'PRODUCAO',
+          acao: 'LOTE_APROVADO',
+          descricao: `Lote ${id} (${loteData?.produto || 'N/A'}) aprovado para engarrafamento - Volume: ${loteData?.volume_atual?.toFixed(2) || '0'}L`
+      })
+      
       router.refresh()
     } catch (err) { alert("Erro ao liberar lote.") } finally { setLoadingId(null) }
   }
@@ -73,11 +83,28 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
     if (!window.confirm(`Deseja EXCLUIR o lote ${id}? Isso estorna os insumos.`)) return
     setDeletingId(id)
     try {
+        // Busca dados do lote antes de excluir para o log
+        const { data: loteData } = await supabase.from('Lote').select('produto, volume_atual').eq('id', id).single()
+        
         const { error } = await supabase.rpc('excluir_lote_reverter', { p_lote_id: id })
         if (error) throw error
+        
+        await supabase.from('Logs').insert({
+            categoria: 'PRODUCAO',
+            acao: 'LOTE_EXCLUIDO',
+            descricao: `Lote ${id} (${loteData?.produto || 'N/A'}) excluído - Volume: ${loteData?.volume_atual?.toFixed(2) || '0'}L - Insumos revertidos`
+        })
+        
         alert("Lote excluído.")
         router.refresh()
-    } catch (err: any) { alert("Erro: " + err.message) } finally { setDeletingId(null) }
+    } catch (err: any) { 
+        await supabase.from('Logs').insert({
+            categoria: 'ERRO',
+            acao: 'ERRO_EXCLUSAO_LOTE',
+            descricao: `Erro ao excluir Lote ${id}: ${err.message}`
+        })
+        alert("Erro: " + err.message) 
+    } finally { setDeletingId(null) }
   }
 
   // --- NOVAS FUNÇÕES DE ATUALIZAÇÃO MANUAL ---

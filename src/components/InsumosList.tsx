@@ -69,11 +69,25 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
               insumo_id: selectedId, tipo: 'compra', quantidade: Number(qtdCompra),
               valor_total: Number(valorTotal), codigo_compra: codigoCompra, fornecedor: fornecedor, observacao: obs
           })
+          
+          await supabase.from('Logs').insert({
+              categoria: 'ESTOQUE',
+              acao: 'COMPRA_REGISTRADA',
+              descricao: `Compra: ${itemSelecionado.nome} - Qtd: ${qtdCompra}${itemSelecionado.unidade} - Valor: R$ ${Number(valorTotal).toFixed(2)}${fornecedor ? ` - Fornecedor: ${fornecedor}` : ''}${codigoCompra ? ` - ${codigoCompra}` : ''}${obs ? ` - Obs: ${obs}` : ''}`
+          })
+          
           alert("Compra registrada!")
           setModalOpen(false)
           setQtdCompra(''); setValorTotal(''); setObs(''); setSelectedId(''); setCodigoCompra(''); setFornecedor('')
           router.refresh()
-      } catch (err: any) { alert("Erro: " + err.message) } finally { setLoading(false) }
+      } catch (err: any) { 
+          await supabase.from('Logs').insert({
+              categoria: 'ERRO',
+              acao: 'ERRO_COMPRA',
+              descricao: `Erro ao registrar compra de ${itemSelecionado?.nome || 'N/A'}: ${err.message}`
+          })
+          alert("Erro: " + err.message) 
+      } finally { setLoading(false) }
   }
 
   // --- NOVA FUNÇÃO: ATUALIZAÇÃO MANUAL DIRETA ---

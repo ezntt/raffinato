@@ -23,11 +23,22 @@ export default function LoginPage() {
 
       if (error) throw error
 
+      await supabase.from('Logs').insert({
+          categoria: 'AUTENTICACAO',
+          acao: 'LOGIN',
+          descricao: `Login realizado: ${email}`
+      })
+
       // Login com sucesso!
       router.push('/') // Redireciona para o Dashboard
       router.refresh() // Força atualização dos dados
 
     } catch (err: any) {
+      await supabase.from('Logs').insert({
+          categoria: 'AUTENTICACAO',
+          acao: 'ERRO_LOGIN',
+          descricao: `Tentativa de login falhou: ${email} - ${err.message}`
+      })
       setError('Erro ao entrar: Verifique seu e-mail e senha.')
     } finally {
       setLoading(false)
