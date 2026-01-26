@@ -84,6 +84,12 @@ export function CalculadoraXarope() {
 
   const procesarXarope = async () => {
     setConfirmacao({ isOpen: false, stage: 0, isDangerous: false })
+    
+    if (!estAcucar || !estGarrafaVazia) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Estoques não carregados. Tente novamente.', type: 'error' })
+      return
+    }
+    
     setLoading(true)
     try {
         // CHAMADA DA NOVA FUNÇÃO SQL (RPC)
