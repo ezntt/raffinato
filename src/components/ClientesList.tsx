@@ -2,10 +2,14 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { useMasks } from '@/lib/useMasks'
+import { ModalAlerta } from './ModalAlerta'
 
 export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const router = useRouter()
+  const { formatPhoneNumber, formatCPF, formatCNPJ, formatCEP } = useMasks()
   const [clientes, setClientes] = useState(initialClientes)
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
   
   // Controle do Modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -47,24 +51,14 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
 
-  // === MÁSCARAS ===
-  const maskPhone = (v: string) => {
-    v = v.replace(/\D/g, "").substring(0, 11)
-    if (v.length > 10) return v.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
-    if (v.length > 5) return v.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
-    if (v.length > 2) return v.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
-    return v ? v.replace(/^(\d*)/, "($1") : ""
-  }
-
   const handleDocChange = async (v: string) => {
-      const limpo = v.replace(/\D/g, "")
-      
       if (tipo === 'PF') {
-          setCpfCnpj(limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4").substring(0, 14))
+          setCpfCnpj(formatCPF(v))
       } else {
-          const formatado = limpo.substring(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
-          setCpfCnpj(formatado)
+          const formatted = formatCNPJ(v)
+          setCpfCnpj(formatted)
 
+          const limpo = v.replace(/\D/g, '')
           if (limpo.length === 14) {
               setBuscandoDados(true)
               try {
@@ -89,10 +83,6 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
               }
           }
       }
-  }
-
-  const maskCep = (v: string) => {
-    return v.replace(/\D/g, "").substring(0, 8).replace(/^(\d{5})(\d{3})/, "$1-$2")
   }
 
   const buscarCep = async (cepInput: string) => {
@@ -183,18 +173,18 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
             // Preserva a contagem de vendas ao atualizar a lista local
             const vendasCount = clientes.find(c => c.id === idEdicao)?.vendas
             setClientes(clientes.map(c => c.id === idEdicao ? { ...c, ...payload, vendas: vendasCount } : c))
-            alert("Cliente atualizado!")
+            setAlerta({ isOpen: true, title: 'Sucesso', message: 'Cliente atualizado!', type: 'success' })
         } else {
             const { data: novo, error } = await supabase.from('Cliente').insert(payload).select().single()
             if (error) throw error
             // Novo cliente começa com 0 vendas
             setClientes([...clientes, { ...novo, vendas: [{ count: 0 }] }].sort((a,b) => a.nome.localeCompare(b.nome)))
-            alert("Cliente cadastrado!")
+            setAlerta({ isOpen: true, title: 'Sucesso', message: 'Cliente cadastrado!', type: 'success' })
         }
         setIsModalOpen(false)
         router.refresh()
     } catch (err: any) {
-        alert("Erro: " + err.message)
+        setAlerta({ isOpen: true, title: 'Erro', message: `Erro: ${err.message}`, type: 'error' })
     } finally {
         setLoading(false)
     }
@@ -318,7 +308,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">WhatsApp *</label>
-                                        <input required value={telefone} onChange={e => setTelefone(maskPhone(e.target.value))} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900" />
+                                        <input required value={telefone} onChange={e => setTelefone(formatPhoneNumber(e.target.value))} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-black text-gray-900" />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">Tipo *</label>
@@ -350,7 +340,7 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
 
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase">CEP</label>
-                                        <input value={cep} onChange={e => { setCep(maskCep(e.target.value)); if(e.target.value.length >= 8) buscarCep(e.target.value) }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
+                                        <input value={cep} onChange={e => { setCep(formatCEP(e.target.value)); if(e.target.value.length >= 8) buscarCep(e.target.value) }} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black text-gray-900" />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -432,6 +422,14 @@ export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
             </div>
         </div>
       )}
+
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
     </>
   )
 }

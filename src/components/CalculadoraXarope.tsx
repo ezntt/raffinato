@@ -3,11 +3,16 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { NOME_INSUMO, RECEITA } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
+import { ModalConfirmacao } from './ModalConfirmacao'
 
 export function CalculadoraXarope() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [sucoInput, setSucoInput] = useState('')
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [confirmacao, setConfirmacao] = useState({ isOpen: false, stage: 0, isDangerous: false })
+  const [onConfirmCallback, setOnConfirmCallback] = useState<() => void>(() => {})
 
   // Estados apenas para mostrar saldo na tela (não usados para salvar)
   const [estAcucar, setEstAcucar] = useState<{id: string, qtd: number} | null>(null)
@@ -52,18 +57,32 @@ export function CalculadoraXarope() {
   const saldoGarrafasOk = (estGarrafaVazia?.qtd || 0) >= garrafasGeradas
 
   const handleSalvarXarope = async () => {
-    if (qtdSuco <= 0) return alert("Digite a quantidade de suco.")
+    if (qtdSuco <= 0) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Digite a quantidade de suco.', type: 'error' })
+      return
+    }
     
     // Verificações de segurança
-    if (!estAcucar?.id) return alert(`ERRO: Item '${NOME_INSUMO.ACUCAR}' não encontrado no banco. Verifique o nome exato.`)
-    if (!estGarrafaVazia?.id) return alert(`ERRO: Item '${NOME_INSUMO.GARRAFA_XAROPE_VAZIA}' não encontrado no banco. Verifique o nome exato.`)
-
-    if (!saldoAcucarOk || !saldoGarrafasOk) {
-       if (!window.confirm("⚠️ Estoque visualmente insuficiente. Deseja tentar forçar a produção?")) return
-    } else {
-       if (!window.confirm(`Produzir ${garrafasGeradas} garrafas de Xarope?`)) return
+    if (!estAcucar?.id) {
+      setAlerta({ isOpen: true, title: 'Erro', message: `Item '${NOME_INSUMO.ACUCAR}' não encontrado no banco. Verifique o nome exato.`, type: 'error' })
+      return
+    }
+    if (!estGarrafaVazia?.id) {
+      setAlerta({ isOpen: true, title: 'Erro', message: `Item '${NOME_INSUMO.GARRAFA_XAROPE_VAZIA}' não encontrado no banco. Verifique o nome exato.`, type: 'error' })
+      return
     }
 
+    if (!saldoAcucarOk || !saldoGarrafasOk) {
+       setConfirmacao({ isOpen: true, stage: 1, isDangerous: true })
+       setOnConfirmCallback(() => procesarXarope)
+    } else {
+       setConfirmacao({ isOpen: true, stage: 2, isDangerous: false })
+       setOnConfirmCallback(() => procesarXarope)
+    }
+  }
+
+  const procesarXarope = async () => {
+    setConfirmacao({ isOpen: false, stage: 0, isDangerous: false })
     setLoading(true)
     try {
         // CHAMADA DA NOVA FUNÇÃO SQL (RPC)
@@ -84,12 +103,12 @@ export function CalculadoraXarope() {
             descricao: `Produziu ${garrafasGeradas} garrafas Xarope (Gastou ${qtdSuco}L Suco)` 
         })
 
-        alert(`Sucesso! Produção registrada.`)
+        setAlerta({ isOpen: true, title: 'Sucesso', message: 'Produção registrada.', type: 'success' })
         router.push('/') 
         setSucoInput('')
 
     } catch (err: any) { 
-        alert("Erro ao processar: " + err.message) 
+        setAlerta({ isOpen: true, title: 'Erro', message: `Erro ao processar: ${err.message}`, type: 'error' })
     } finally { 
         setLoading(false) 
     }
@@ -156,6 +175,27 @@ export function CalculadoraXarope() {
             </div>
             <button onClick={handleSalvarXarope} disabled={loading} className="w-full bg-black text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50 mt-8 ">{loading ? 'Engarrafando...' : 'Confirmar Produção e Engarrafar'}</button>
         </div>
+
+        <ModalConfirmacao
+          isOpen={confirmacao.isOpen}
+          title={confirmacao.stage === 1 ? '⚠️ Estoque Insuficiente' : 'Confirmar Produção'}
+          message={confirmacao.stage === 1 ? 'Estoque visualmente insuficiente. Deseja tentar forçar a produção?' : `Produzir ${garrafasGeradas} garrafas de Xarope?`}
+          isDangerous={confirmacao.isDangerous}
+          onConfirm={() => {
+            setConfirmacao({ isOpen: false, stage: 0, isDangerous: false })
+            onConfirmCallback()
+          }}
+          onCancel={() => setConfirmacao({ isOpen: false, stage: 0, isDangerous: false })}
+          loading={loading}
+        />
+
+        <ModalAlerta
+          isOpen={alerta.isOpen}
+          title={alerta.title}
+          message={alerta.message}
+          type={alerta.type}
+          onClose={() => setAlerta({ ...alerta, isOpen: false })}
+        />
       </div>
   )
 }

@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { PRECO_PADRAO, NOME_INSUMO } from '@/lib/constants'
+import { useMasks } from '@/lib/useMasks'
+import { ModalAlerta } from './ModalAlerta'
 
 interface Props {
   isOpen: boolean
@@ -11,8 +13,10 @@ interface Props {
 
 export function ModalVenda({ isOpen, onClose }: Props) {
   const router = useRouter()
+  const { formatPhoneNumber, formatCPF, formatCNPJ } = useMasks()
   const [loading, setLoading] = useState(false)
   const [buscandoDados, setBuscandoDados] = useState(false)
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
 
   // Dados do Cliente (Visíveis)
   const [nome, setNome] = useState('')
@@ -68,32 +72,14 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   })
 
   // Mask de telefone
-  const formatarTelefone = (v: string) => {
-    let val = v.replace(/\D/g, "").substring(0, 11)
-    if (val.length > 10) return val.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3")
-    if (val.length > 5) return val.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3")
-    if (val.length > 2) return val.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2")
-    return val ? val.replace(/^(\d*)/, "($1") : ""
-  }
-
   // Mask de PF e PJ + BUSCA CNPJ
   const handleDocChange = async (v: string) => {
     const limpo = v.replace(/\D/g, "")
     
     if (tipoCliente === 'PF') {
-        let cpf = limpo.substring(0, 11)
-        cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
-        cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2")
-        cpf = cpf.replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-        setCpfCnpj(cpf)
+        setCpfCnpj(formatCPF(v))
     } else {
-        // Formata CNPJ
-        let cnpj = limpo.substring(0, 14)
-        cnpj = cnpj.replace(/^(\d{2})(\d)/, "$1.$2")
-        cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        cnpj = cnpj.replace(/\.(\d{3})(\d)/, ".$1/$2")
-        cnpj = cnpj.replace(/(\d{4})(\d)/, "-$1")
-        setCpfCnpj(cnpj)
+        setCpfCnpj(formatCNPJ(v))
 
         // BUSCA AUTOMÁTICA CNPJ
         if (limpo.length === 14) {
@@ -196,7 +182,6 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     const num = parseFloat(valor)
     if (!isNaN(num) && num >= 0) setFn(num)
   }
-
   useEffect(() => {
     const total = (Number(qtdL750||0) * Number(precoUnit750||0)) + (Number(qtdL375||0) * Number(precoUnit375||0)) + (Number(qtdA750||0) * Number(precoUnit750||0)) + (Number(qtdA375||0) * Number(precoUnit375||0))
     setValorTotal(total > 0 ? total : '') 
@@ -205,7 +190,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const validarItem = (nomeProd: string, tam: number, qtdInput: number | string, loteId: string) => {
     const qtd = Number(qtdInput) || 0
     if (qtd > 0 && !loteId) {
-        alert(`Selecione o LOTE de origem para ${nomeProd}`)
+        setAlerta({ isOpen: true, title: 'Erro', message: `Selecione o LOTE de origem para ${nomeProd}`, type: 'error' })
         return false
     }
     if (qtd <= 0) return true 
@@ -215,7 +200,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     
     const estoqueDisponivel = tam === 750 ? lote.estoque_750 : lote.estoque_375
     if (qtd > estoqueDisponivel) {
-        alert(`ERRO: Lote ${loteId} de ${nomeProd} só tem ${estoqueDisponivel} unidades.`)
+        setAlerta({ isOpen: true, title: 'Erro', message: `ERRO: Lote ${loteId} de ${nomeProd} só tem ${estoqueDisponivel} unidades.`, type: 'error' })
         return false
     }
     return true
@@ -228,15 +213,25 @@ export function ModalVenda({ isOpen, onClose }: Props) {
     if (!validarItem('Arancello 750ml', 750, qtdA750, loteA750)) return
     if (!validarItem('Arancello 375ml', 375, qtdA375, loteA375)) return
     
-    if (!qtdL750 && !qtdL375 && !qtdA750 && !qtdA375) return alert("Adicione pelo menos 1 item")
+    if (!qtdL750 && !qtdL375 && !qtdA750 && !qtdA375) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Adicione pelo menos 1 item', type: 'error' })
+      return
+    }
 
     const qSacola = Number(qtdSacolas) || 0
     const qCaixa = Number(qtdCaixas) || 0
     const qVeludo = Number(qtdVeludo) || 0
 
-    if (qSacola > estoqueEmbalagem.sacola) if(!confirm(`Estoque de Sacolas insuficiente (${estoqueEmbalagem.sacola}). Continuar?`)) return
-    if (qCaixa > estoqueEmbalagem.caixa) if(!confirm(`Estoque de Caixas insuficiente (${estoqueEmbalagem.caixa}). Continuar?`)) return
-    if (qVeludo > estoqueEmbalagem.veludo) if(!confirm(`Estoque de Veludo insuficiente (${estoqueEmbalagem.veludo}). Continuar?`)) return
+    // Verificar estoques de embalagem (com confirmações)
+    const avisos = []
+    if (qSacola > estoqueEmbalagem.sacola) avisos.push(`Estoque de Sacolas insuficiente (${estoqueEmbalagem.sacola})`)
+    if (qCaixa > estoqueEmbalagem.caixa) avisos.push(`Estoque de Caixas insuficiente (${estoqueEmbalagem.caixa})`)
+    if (qVeludo > estoqueEmbalagem.veludo) avisos.push(`Estoque de Veludo insuficiente (${estoqueEmbalagem.veludo})`)
+    
+    if (avisos.length > 0) {
+      const avisoMensagem = avisos.join('\n')
+      if(!confirm(`${avisoMensagem}\n\nContinuar?`)) return
+    }
 
     setLoading(true)
 
@@ -315,7 +310,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
           descricao: `Venda R$ ${Number(valorTotal).toFixed(2)} - Cliente: ${nome} - ${itensVenda.length} item(ns): ${resumoItens} - ${pago ? 'PAGO' : 'PENDENTE'}${observacao ? ` - Obs: ${observacao}` : ''}`
       })
 
-      alert("Venda realizada com sucesso!")
+      setAlerta({ isOpen: true, title: 'Sucesso', message: 'Venda realizada com sucesso!', type: 'success' })
       router.refresh()
       onClose()
       
@@ -333,7 +328,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
           acao: 'ERRO_VENDA',
           descricao: `Erro ao registrar venda: ${error.message} - Cliente: ${nome || 'N/A'} - Valor tentado: R$ ${valorTotal || '0'}`
       })
-      alert("Erro: " + error.message)
+      setAlerta({ isOpen: true, title: 'Erro', message: `Erro: ${error.message}`, type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -388,7 +383,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                         </div>
 
                         <div className="flex gap-3">
-                            <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatarTelefone(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-bold placeholder-gray-400" />
+                            <input required placeholder="WhatsApp" value={telefone} onChange={e => setTelefone(formatPhoneNumber(e.target.value))} className="w-2/3 p-3 bg-white rounded-xl border border-gray-200 outline-none focus:border-black text-black font-bold placeholder-gray-400" />
                             
                             <select 
                                 value={tipoCliente} 
@@ -489,6 +484,14 @@ export function ModalVenda({ isOpen, onClose }: Props) {
                 </div>
             </div>
         </form>
+
+        <ModalAlerta
+          isOpen={alerta.isOpen}
+          title={alerta.title}
+          message={alerta.message}
+          type={alerta.type}
+          onClose={() => setAlerta({ ...alerta, isOpen: false })}
+        />
       </div>
     </div>
   )

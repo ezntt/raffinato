@@ -6,9 +6,14 @@ import { ModalEngarrafar } from './ModalEngarrafar'
 import { ModalMaceracao } from './ModalMaceracao'
 import { ModalFiltrar } from './ModalFiltrar'
 import { NOME_INSUMO } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
+import { ModalConfirmacao } from './ModalConfirmacao'
 
 export function LotesList({ initialLotes }: { initialLotes: any[] }) {
   const router = useRouter()
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [confirmacao, setConfirmacao] = useState({ isOpen: false, title: '', message: '', loteParaAcao: null as any, acao: '' })
+  const [onConfirmCallback, setOnConfirmCallback] = useState<() => void>(() => {})
   
   // Modais
   const [loteSelecionado, setLoteSelecionado] = useState<any>(null)
@@ -60,7 +65,17 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
 
   // --- LÓGICA DE LOTES EXISTENTE ---
   const liberarLote = async (id: string) => {
-    if (!window.confirm("Deseja aprovar este lote para engarrafamento?")) return
+    setConfirmacao({
+      isOpen: true,
+      title: 'Confirmar Aprovação',
+      message: 'Deseja aprovar este lote para engarrafamento?',
+      loteParaAcao: id,
+      acao: 'liberar'
+    })
+    setOnConfirmCallback(() => () => confirmarLiberarLote(id))
+  }
+
+  const confirmarLiberarLote = async (id: string) => {
     setLoadingId(id)
     try {
       const { error } = await supabase.from('Lote').update({ status: 'pronto' }).eq('id', id)
@@ -76,11 +91,21 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
       })
       
       router.refresh()
-    } catch (err) { alert("Erro ao liberar lote.") } finally { setLoadingId(null) }
+    } catch (err) { setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao liberar lote.', type: 'error' }) } finally { setLoadingId(null) }
   }
 
   const excluirLote = async (id: string) => {
-    if (!window.confirm(`Deseja EXCLUIR o lote ${id}? Isso estorna os insumos.`)) return
+    setConfirmacao({
+      isOpen: true,
+      title: 'Confirmar Exclusão',
+      message: `Deseja EXCLUIR o lote ${id}? Isso estorna os insumos.`,
+      loteParaAcao: id,
+      acao: 'excluir'
+    })
+    setOnConfirmCallback(() => () => confirmarExcluirLote(id))
+  }
+
+  const confirmarExcluirLote = async (id: string) => {
     setDeletingId(id)
     try {
         // Busca dados do lote antes de excluir para o log
@@ -95,7 +120,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
             descricao: `Lote ${id} (${loteData?.produto || 'N/A'}) excluído - Volume: ${loteData?.volume_atual?.toFixed(2) || '0'}L - Insumos revertidos`
         })
         
-        alert("Lote excluído.")
+        setAlerta({ isOpen: true, title: 'Sucesso', message: 'Lote excluído.', type: 'success' })
         router.refresh()
     } catch (err: any) { 
         await supabase.from('Logs').insert({
@@ -103,7 +128,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
             acao: 'ERRO_EXCLUSAO_LOTE',
             descricao: `Erro ao excluir Lote ${id}: ${err.message}`
         })
-        alert("Erro: " + err.message) 
+        setAlerta({ isOpen: true, title: 'Erro', message: `Erro: ${err.message}`, type: 'error' })
     } finally { setDeletingId(null) }
   }
 
@@ -120,7 +145,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
         })
         fetchBases() // Atualiza localmente
     } catch (error) {
-        alert("Erro ao atualizar base.")
+        setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao atualizar base.', type: 'error' })
     }
   }
 
@@ -135,7 +160,7 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
         })
         router.refresh()
     } catch (error) {
-        alert("Erro ao atualizar lote.")
+        setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao atualizar lote.', type: 'error' })
     }
   }
 
@@ -359,6 +384,27 @@ export function LotesList({ initialLotes }: { initialLotes: any[] }) {
       <ModalMaceracao isOpen={isMaceracaoOpen} onClose={() => { setIsMaceracaoOpen(false); fetchBases() }} />
       
       <ModalFiltrar isOpen={filtrarOpen} onClose={() => { setFiltrarOpen(false); fetchBases() }} tipoInicial={tipoFiltrar} />
+
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
+
+      <ModalConfirmacao
+        isOpen={confirmacao.isOpen}
+        title={confirmacao.title}
+        message={confirmacao.message}
+        isDangerous={confirmacao.acao === 'excluir'}
+        onConfirm={() => {
+          setConfirmacao({ isOpen: false, title: '', message: '', loteParaAcao: null, acao: '' })
+          onConfirmCallback()
+        }}
+        onCancel={() => setConfirmacao({ isOpen: false, title: '', message: '', loteParaAcao: null, acao: '' })}
+        loading={false}
+      />
     </>
   )
 }

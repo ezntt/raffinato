@@ -3,10 +3,21 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { RECEITA, NOME_INSUMO } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
+import { ModalConfirmacao } from './ModalConfirmacao'
 
 export function CalculadoraLicor() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  
+  // Estados para Modais
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [confirmacao, setConfirmacao] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {} 
+  })
   
   const [loteManual, setLoteManual] = useState('')
   const [litrosInput, setLitrosInput] = useState('')
@@ -59,24 +70,41 @@ export function CalculadoraLicor() {
   const temInsumos = saldoAcucar >= 0 && saldoBase >= 0
 
   const handleSalvarLote = async () => {
-    if (!loteManual.trim()) return alert("Digite o NÚMERO DO LOTE.")
-    if (volumeTotalLitros <= 0) return alert("Insira uma quantidade válida.")
-
-    if (!estAcucar) return alert(`ERRO: Item '${NOME_INSUMO.ACUCAR}' não encontrado no estoque.`)
-    if (!estBaseSelecionada) return alert(`ERRO: Item Base Alcoólica não encontrado no estoque.`)
-
-    if (!temInsumos) {
-        if (!window.confirm("ATENÇÃO: Estoque INSUFICIENTE. Deseja continuar e negativar o estoque?")) return
-    } else {
-        if (!window.confirm(`Confirma a produção de ${volumeTotalLitros}L de ${tipo}?`)) return
+    if (!loteManual.trim()) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Digite o NÚMERO DO LOTE.', type: 'error' })
+      return
+    }
+    
+    if (volumeTotalLitros <= 0) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Insira uma quantidade válida.', type: 'error' })
+      return
     }
 
-    setLoading(true)
+    if (!estAcucar) {
+      setAlerta({ isOpen: true, title: 'Erro', message: `Item '${NOME_INSUMO.ACUCAR}' não encontrado no estoque.`, type: 'error' })
+      return
+    }
+    
+    if (!estBaseSelecionada) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Item Base Alcoólica não encontrado no estoque.', type: 'error' })
+      return
+    }
 
-    try {
-        // CHAMADA ÚNICA PARA A NOVA PROCEDURE
-        // Ela cria/atualiza o lote E desconta os insumos atomicamente
-        const { error } = await supabase.rpc('produzir_licor', {
+    // Se chegou aqui, mostra confirmação
+    const mensagem = !temInsumos 
+      ? `⚠️ ATENÇÃO: Estoque INSUFICIENTE.\n\nDeseja continuar e negativar o estoque?`
+      : `Confirma a produção de ${volumeTotalLitros}L de ${tipo}?`
+    
+    const title = !temInsumos ? 'Estoque Insuficiente' : 'Confirmar Produção'
+
+    setConfirmacao({
+      isOpen: true,
+      title,
+      message: mensagem,
+      onConfirm: async () => {
+        setLoading(true)
+        try {
+          const { error } = await supabase.rpc('produzir_licor', {
             p_lote_id: loteManual,
             p_produto: tipo,
             p_volume_novo: volumeTotalLitros,
@@ -84,25 +112,38 @@ export function CalculadoraLicor() {
             p_qtd_acucar: kgAcucarNecessarios,
             p_id_base: estBaseSelecionada.id,
             p_qtd_base: volBaseNecessariaL
-        })
+          })
 
-        if (error) throw error
+          if (error) throw error
 
-        // Log visual para o usuário (Opcional, mas bom manter)
-        await supabase.from('Logs').insert({ 
+          await supabase.from('Logs').insert({ 
             categoria: 'PRODUCAO', 
             acao: 'PRODUCAO_LOTE', 
             descricao: `Lote ${loteManual}: +${volumeTotalLitros}L ${tipo}` 
-        })
+          })
 
-        alert(`Sucesso! Lote ${loteManual} registrado e insumos descontados!`)
-        router.push('/lotes')
-        
-    } catch (error: any) {
-        alert("Erro ao salvar: " + error.message)
-    } finally {
-        setLoading(false)
-    }
+          setAlerta({ 
+            isOpen: true, 
+            title: 'Sucesso!', 
+            message: `Lote ${loteManual} registrado e insumos descontados!`,
+            type: 'success'
+          })
+          
+          setTimeout(() => router.push('/lotes'), 1500)
+          
+        } catch (error: any) {
+          setAlerta({ 
+            isOpen: true, 
+            title: 'Erro', 
+            message: 'Erro ao salvar: ' + error.message,
+            type: 'error'
+          })
+        } finally {
+          setLoading(false)
+          setConfirmacao({ ...confirmacao, isOpen: false })
+        }
+      }
+    })
   }
 
   const RowEstoque = ({ label, atual, necessario, saldo, unidade }: any) => (
@@ -193,6 +234,25 @@ export function CalculadoraLicor() {
                <button type="button" onClick={handleSalvarLote} disabled={loading} className={`w-full font-bold py-5 rounded-2xl shadow-lg  transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 ${temInsumos ? 'bg-black hover:bg-gray-800 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}>{loading ? 'Salvando...' : (temInsumos ? 'Confirmar Produção' : 'Estoque Insuficiente (Forçar)')}</button>
             </div>
         </div>
+
+        {/* Modais */}
+        <ModalAlerta
+          isOpen={alerta.isOpen}
+          title={alerta.title}
+          message={alerta.message}
+          type={alerta.type as any}
+          onClose={() => setAlerta({ ...alerta, isOpen: false })}
+        />
+
+        <ModalConfirmacao
+          isOpen={confirmacao.isOpen}
+          title={confirmacao.title}
+          message={confirmacao.message}
+          onConfirm={confirmacao.onConfirm}
+          onCancel={() => setConfirmacao({ ...confirmacao, isOpen: false })}
+          loading={loading}
+          isDangerous={!temInsumos}
+        />
       </div>
   )
 }

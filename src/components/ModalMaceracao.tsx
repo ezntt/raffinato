@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { NOME_INSUMO } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
 
 interface Props {
   isOpen: boolean
@@ -14,6 +15,9 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [tipo, setTipo] = useState<'limoncello' | 'arancello'>('limoncello')
   const [qtd, setQtd] = useState('')
+  
+  // Estados para Modal
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
   
   // IDs dos Insumos
   const [idAlcoolPuro, setIdAlcoolPuro] = useState<string>('')
@@ -42,8 +46,14 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
   const handleMacerar = async (e: React.FormEvent) => {
     e.preventDefault()
     const volume = Number(qtd)
-    if (volume <= 0) return alert("Inválido")
-    if (!idDestino) return alert("Erro: Base com casca não encontrada no banco. Verifique os nomes.")
+    if (volume <= 0) {
+      setAlerta({ isOpen: true, title: 'Inválido', message: 'A quantidade deve ser maior que 0', type: 'error' })
+      return
+    }
+    if (!idDestino) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Base com casca não encontrada no banco. Verifique os nomes.', type: 'error' })
+      return
+    }
     
     setLoading(true)
     try {
@@ -65,12 +75,12 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
             descricao: `Iniciou maceração de ${volume}L para Base ${tipo} (com casca)`
         })
 
-        alert("Maceração iniciada!")
+        setAlerta({ isOpen: true, title: 'Sucesso', message: 'Maceração iniciada!', type: 'success' })
         router.refresh()
         onClose()
         setQtd('')
     } catch (err: any) {
-        alert("Erro: " + err.message)
+        setAlerta({ isOpen: true, title: 'Erro', message: err.message, type: 'error' })
     } finally {
         setLoading(false)
     }
@@ -111,6 +121,14 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
             </button>
         </form>
       </div>
+
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
     </div>
   )
 }

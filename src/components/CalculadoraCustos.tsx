@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { NOME_INSUMO } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
 
 // --- ÍCONES ---
 const CheckIcon = () => (
@@ -167,6 +168,7 @@ const ITENS_PERMITIDOS = [
 export function CalculadoraCustos() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
   
   // Controle de Modais
   const [showInfo, setShowInfo] = useState(false)
@@ -237,7 +239,7 @@ export function CalculadoraCustos() {
         const valNum = valStr ? parseFloat(valStr.replace(',', '.')) : 0
         await supabase.from('Insumo').update({ custo_atual: valNum }).eq('id', item.id)
         setInsumos(prev => prev.map(i => i.id === item.id ? { ...i, custo_atual: valNum } : i))
-    } catch (err) { alert("Erro ao salvar insumo") }
+    } catch (err) { setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao salvar insumo', type: 'error' }) }
   }
 
   const salvarDespesaUnica = async (campo: string) => {
@@ -259,7 +261,7 @@ export function CalculadoraCustos() {
               const { data } = await supabase.from('Empresa').insert({ [coluna]: valNum }).select().single()
               if (data) setEmpresaId(data.id)
           }
-      } catch (err) { alert("Erro ao salvar despesa") }
+      } catch (err) { setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao salvar despesa', type: 'error' }) }
   }
 
   const salvarFrutas = async () => {
@@ -274,8 +276,8 @@ export function CalculadoraCustos() {
         const keys = Object.keys(despesas)
         for (const k of keys) { await salvarDespesaUnica(k) }
         salvarFrutas()
-        alert("Todos os dados foram salvos!")
-    } catch(err) { alert("Erro ao salvar tudo") }
+        setAlerta({ isOpen: true, title: 'Sucesso', message: 'Todos os dados foram salvos!', type: 'success' })
+    } catch(err) { setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao salvar tudo', type: 'error' }) }
     finally { setSaving(false) }
   }
 
@@ -508,6 +510,13 @@ export function CalculadoraCustos() {
       </div>
 
       <ModalDetalhes data={detailData} onClose={() => setDetailData(null)} />
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
     </>
   )
 }

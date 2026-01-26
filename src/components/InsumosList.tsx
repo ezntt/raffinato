@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ComprasList } from './ComprasList'
+import { ModalAlerta } from './ModalAlerta'
 
 // Definição das Categorias Visuais
 const CATEGORIAS_VISUAIS = {
@@ -16,6 +17,7 @@ const CATEGORIAS_VISUAIS = {
 export function InsumosList({ insumos, historico }: { insumos: any[], historico: any[] }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque')
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
   
   // Estado para controlar o Modo de Edição
   const [isEditing, setIsEditing] = useState(false)
@@ -55,13 +57,15 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
         grupos.EXPEDICAO.push(item)
       }
     })
-
     return grupos
   }, [insumos])
 
   const handleSalvarCompra = async (e: React.FormEvent) => {
       e.preventDefault()
-      if(!selectedId) return alert("Selecione um insumo")
+      if(!selectedId) {
+        setAlerta({ isOpen: true, title: 'Erro', message: 'Selecione um insumo', type: 'error' })
+        return
+      }
       setLoading(true)
       try {
           await supabase.from('Insumo').update({ quantidade_atual: itemSelecionado.quantidade_atual + Number(qtdCompra) }).eq('id', selectedId)
@@ -76,7 +80,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
               descricao: `Compra: ${itemSelecionado.nome} - Qtd: ${qtdCompra}${itemSelecionado.unidade} - Valor: R$ ${Number(valorTotal).toFixed(2)}${fornecedor ? ` - Fornecedor: ${fornecedor}` : ''}${codigoCompra ? ` - ${codigoCompra}` : ''}${obs ? ` - Obs: ${obs}` : ''}`
           })
           
-          alert("Compra registrada!")
+          setAlerta({ isOpen: true, title: 'Sucesso', message: 'Compra registrada!', type: 'success' })
           setModalOpen(false)
           setQtdCompra(''); setValorTotal(''); setObs(''); setSelectedId(''); setCodigoCompra(''); setFornecedor('')
           router.refresh()
@@ -86,7 +90,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
               acao: 'ERRO_COMPRA',
               descricao: `Erro ao registrar compra de ${itemSelecionado?.nome || 'N/A'}: ${err.message}`
           })
-          alert("Erro: " + err.message) 
+          setAlerta({ isOpen: true, title: 'Erro', message: `Erro: ${err.message}`, type: 'error' })
       } finally { setLoading(false) }
   }
 
@@ -102,7 +106,7 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
         router.refresh()
     } catch (error) {
         console.error("Erro ao atualizar", error)
-        alert("Erro ao salvar alteração.")
+        setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao salvar alteração.', type: 'error' })
     }
   }
 
@@ -297,6 +301,14 @@ export function InsumosList({ insumos, historico }: { insumos: any[], historico:
             </div>
         </div>
       )}
+
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
     </>
   )
 }

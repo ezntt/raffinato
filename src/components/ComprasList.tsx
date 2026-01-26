@@ -2,10 +2,14 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { ModalAlerta } from './ModalAlerta'
+import { ModalConfirmacao } from './ModalConfirmacao'
 
 export function ComprasList({ compras }: { compras: any[] }) {
   const router = useRouter()
   const [filtroMes, setFiltroMes] = useState(new Date().toISOString().slice(0, 7)) // Ex: "2024-02"
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [confirmacao, setConfirmacao] = useState({ isOpen: false, title: '', message: '', compraParaExcluir: null as any })
   
   // Estados do modal de edição
   const [modalEditOpen, setModalEditOpen] = useState(false)
@@ -61,7 +65,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
     const valorNovo = Number(valorEdit)
 
     if (qtdNova <= 0 || valorNovo <= 0) {
-      alert("Quantidade e valor devem ser maiores que zero.")
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Quantidade e valor devem ser maiores que zero.', type: 'error' })
       return
     }
 
@@ -107,7 +111,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
         descricao: `Compra editada: ${compraEditando.Insumo?.nome || 'N/A'} - Qtd: ${qtdAntiga} → ${qtdNova}${compraEditando.Insumo?.unidade || ''} - Valor: R$ ${valorAntigo.toFixed(2)} → R$ ${valorNovo.toFixed(2)}`
       })
 
-      alert("Compra editada com sucesso!")
+      setAlerta({ isOpen: true, title: 'Sucesso', message: 'Compra editada com sucesso!', type: 'success' })
       router.refresh()
       fecharModal()
     } catch (err: any) {
@@ -116,7 +120,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
         acao: 'ERRO_EDITAR_COMPRA',
         descricao: `Erro ao editar compra ${compraEditando?.id}: ${err.message}`
       })
-      alert("Erro ao editar compra: " + err.message)
+      setAlerta({ isOpen: true, title: 'Erro', message: `Erro ao editar compra: ${err.message}`, type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -124,10 +128,19 @@ export function ComprasList({ compras }: { compras: any[] }) {
 
   // Excluir compra
   const handleExcluirCompra = async (compra: any) => {
-    if (!window.confirm(`Deseja EXCLUIR esta compra?\n\n${compra.Insumo?.nome || 'Item'}: ${compra.quantidade} ${compra.Insumo?.unidade || ''}\nValor: R$ ${compra.valor_total.toFixed(2)}\n\nO estoque será revertido automaticamente.`)) {
-      return
-    }
+    setConfirmacao({
+      isOpen: true,
+      title: 'Confirmar Exclusão',
+      message: `Deseja EXCLUIR esta compra?\n\n${compra.Insumo?.nome || 'Item'}: ${compra.quantidade} ${compra.Insumo?.unidade || ''}\nValor: R$ ${compra.valor_total.toFixed(2)}\n\nO estoque será revertido automaticamente.`,
+      compraParaExcluir: compra
+    })
+  }
 
+  const confirmarExclusao = async () => {
+    if (!confirmacao.compraParaExcluir) return
+
+    const compra = confirmacao.compraParaExcluir
+    setConfirmacao({ isOpen: false, title: '', message: '', compraParaExcluir: null })
     setLoading(true)
     try {
       // 1. Buscar estoque atual do insumo
@@ -161,7 +174,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
         descricao: `Compra excluída: ${compra.Insumo?.nome || 'N/A'} - Qtd revertida: ${compra.quantidade}${compra.Insumo?.unidade || ''} - Valor: R$ ${compra.valor_total.toFixed(2)}`
       })
 
-      alert("Compra excluída com sucesso! Estoque revertido.")
+      setAlerta({ isOpen: true, title: 'Sucesso', message: 'Compra excluída com sucesso! Estoque revertido.', type: 'success' })
       router.refresh()
     } catch (err: any) {
       await supabase.from('Logs').insert({
@@ -169,7 +182,7 @@ export function ComprasList({ compras }: { compras: any[] }) {
         acao: 'ERRO_EXCLUIR_COMPRA',
         descricao: `Erro ao excluir compra ${compra.id}: ${err.message}`
       })
-      alert("Erro ao excluir compra: " + err.message)
+      setAlerta({ isOpen: true, title: 'Erro', message: `Erro ao excluir compra: ${err.message}`, type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -381,6 +394,26 @@ export function ComprasList({ compras }: { compras: any[] }) {
           </div>
         </div>
       )}
+
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
+
+      <ModalConfirmacao
+        isOpen={confirmacao.isOpen}
+        title={confirmacao.title}
+        message={confirmacao.message}
+        isDangerous={true}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmarExclusao}
+        onCancel={() => setConfirmacao({ isOpen: false, title: '', message: '', compraParaExcluir: null })}
+        loading={loading}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { NOME_INSUMO } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
 
 interface Props {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface Props {
 export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
   
   // Inputs Manuais
   const [qtdBaixa, setQtdBaixa] = useState('') // Quanto tiro do balde com casca
@@ -50,7 +52,11 @@ export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
       const baixa = Number(qtdBaixa)
       const entrada = Number(qtdEntrada)
 
-      if (baixa <= 0 || entrada <= 0) return alert("Valores inválidos")
+      if (baixa <= 0 || entrada <= 0) {
+        setAlerta({ isOpen: true, title: 'Erro', message: 'Valores inválidos', type: 'error' })
+        return
+      }
+      
       if (entrada > baixa) {
           if(!confirm("Atenção: Você está dizendo que rendeu MAIS líquido do que tinha na maceração. Isso está certo?")) return
       }
@@ -74,7 +80,7 @@ export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
               descricao: `Filtrou ${baixa}L de base com casca e obteve ${entrada}L de base limpa (${tipoInicial}). Perda: ${(baixa-entrada).toFixed(2)}L`
           })
 
-          alert("Filtragem concluída! Estoques atualizados.")
+          setAlerta({ isOpen: true, title: 'Sucesso', message: 'Filtragem concluída! Estoques atualizados.', type: 'success' })
           router.refresh()
           onClose()
           setQtdBaixa(''); setQtdEntrada('')
@@ -87,11 +93,11 @@ export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
             const { data: d } = await supabase.from('Insumo').select('quantidade_atual').eq('id', ids.filtrada).single()
             if(d) await supabase.from('Insumo').update({ quantidade_atual: d.quantidade_atual + entrada }).eq('id', ids.filtrada)
             
-            alert("Filtragem salva (modo fallback)!")
+            setAlerta({ isOpen: true, title: 'Sucesso', message: 'Filtragem salva (modo fallback)!', type: 'success' })
             router.refresh()
             onClose()
         } catch (subErr) {
-            alert("Erro crítico: " + err.message)
+            setAlerta({ isOpen: true, title: 'Erro Crítico', message: `Erro: ${err.message}`, type: 'error' })
         }
       } finally {
           setLoading(false)
@@ -130,6 +136,14 @@ export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
                     {loading ? 'Processando...' : 'Confirmar Filtragem'}
                 </button>
             </form>
+
+            <ModalAlerta
+              isOpen={alerta.isOpen}
+              title={alerta.title}
+              message={alerta.message}
+              type={alerta.type}
+              onClose={() => setAlerta({ ...alerta, isOpen: false })}
+            />
         </div>
     </div>
   )

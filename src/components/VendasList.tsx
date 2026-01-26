@@ -2,10 +2,12 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { ModalAlerta } from './ModalAlerta'
 
 export function VendasList({ initialVendas }: { initialVendas: any[] }) {
   const [vendas, setVendas] = useState(initialVendas)
   const [filtro, setFiltro] = useState<'todos' | 'pagos' | 'pendentes'>('todos')
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
   
   // NOVOS ESTADOS DE FILTRO
   const [filtroMes, setFiltroMes] = useState(new Date().toISOString().slice(0, 7)) // Ex: 2024-02
@@ -49,7 +51,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
       .eq('id', id)
 
     if (error) {
-      alert("Erro ao atualizar pagamento!")
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao atualizar pagamento!', type: 'error' })
       setVendas(vendas)
     }
   }
@@ -117,7 +119,7 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
         {/* Filtro Status (Abas) */}
         <div className="flex-none">
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Status</label>
-            <div className="flex bg-gray-100 p-1 rounded-xl h-[46px]">
+            <div className="flex bg-gray-100 p-1 rounded-xl h-11.5">
                 <button onClick={() => setFiltro('todos')} className={`px-4  rounded-lg text-sm font-bold transition-all ${filtro === 'todos' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Todos</button>
                 <button onClick={() => setFiltro('pagos')} className={`px-4  rounded-lg text-sm font-bold transition-all ${filtro === 'pagos' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-green-600'}`}>Pagos</button>
                 <button onClick={() => setFiltro('pendentes')} className={`px-4  rounded-lg text-sm font-bold transition-all ${filtro === 'pendentes' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-red-500'}`}>Pendentes</button>
@@ -163,6 +165,14 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
           </div>
         ))}
       </div>
+
+      <ModalAlerta
+        isOpen={alerta.isOpen}
+        title={alerta.title}
+        message={alerta.message}
+        type={alerta.type}
+        onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
     </div>
   )
 }

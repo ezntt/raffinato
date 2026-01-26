@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { NOME_INSUMO } from '@/lib/constants'
+import { ModalAlerta } from './ModalAlerta'
+import { ModalConfirmacao } from './ModalConfirmacao'
 
 interface Props {
   isOpen: boolean
@@ -13,6 +15,9 @@ interface Props {
 export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [confirmacao, setConfirmacao] = useState({ isOpen: false, title: '', message: '', isDangerous: false })
+  const [onConfirmCallback, setOnConfirmCallback] = useState<() => void>(() => {})
   
   const [tamanho, setTamanho] = useState<number>(750)
   const [qtdGarrafas, setQtdGarrafas] = useState<string>('')
@@ -96,27 +101,43 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (nQtd <= 0) return alert("Digite uma quantidade válida.")
+    if (nQtd <= 0) {
+      setAlerta({ isOpen: true, title: 'Erro', message: 'Digite uma quantidade válida.', type: 'error' })
+      return
+    }
     
     if (faltaLiquido) {
-        return alert(`Erro Crítico: Faltam ${(litrosGastos - lote.volume_atual).toFixed(2)}L de bebida no tanque.`)
+        setAlerta({ isOpen: true, title: 'Erro Crítico', message: `Faltam ${(litrosGastos - lote.volume_atual).toFixed(2)}L de bebida no tanque.`, type: 'error' })
+        return
     }
 
     if (faltaInsumo) {
-        const confirm = window.confirm("⚠️ ATENÇÃO: Alguns insumos ficarão com estoque NEGATIVO. Deseja forçar a produção mesmo assim?")
-        if (!confirm) return
-        
-        // Log de estoque negativo antes de forçar
-        await supabase.from('Logs').insert({
-            categoria: 'ALERTA',
-            acao: 'ESTOQUE_NEGATIVO',
-            descricao: `Engarrafamento forçado com estoque negativo - Lote ${lote.id} (${lote.produto}) - ${nQtd} garrafas ${tamanho}ml`
+        setConfirmacao({ 
+          isOpen: true, 
+          title: '⚠️ ATENÇÃO', 
+          message: 'Alguns insumos ficarão com estoque NEGATIVO. Deseja forçar a produção mesmo assim?', 
+          isDangerous: true 
         })
+        setOnConfirmCallback(() => processarEngarrafamento)
+        return
     }
 
+    await processarEngarrafamento()
+  }
+
+  const processarEngarrafamento = async () => {
     setLoading(true)
 
     try {
+      // Log de estoque negativo se for o caso
+      if (faltaInsumo) {
+        await supabase.from('Logs').insert({
+          categoria: 'ALERTA',
+          acao: 'ESTOQUE_NEGATIVO',
+          descricao: `Engarrafamento forçado com estoque negativo - Lote ${lote.id} (${lote.produto}) - ${nQtd} garrafas ${tamanho}ml`
+        })
+      }
+
       // Chamada RPC atualizada
       const { error } = await supabase.rpc('engarrafar_lote', {
         p_lote_id: lote.id,
@@ -135,7 +156,7 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
           descricao: `Lote ${lote.id}: ${nQtd} garrafas ${tamanho}ml de ${lote.produto} - Volume restante no tanque: ${volumeRestante}L`
       })
 
-      alert(`Sucesso! ${nQtd} garrafas produzidas. Estoques atualizados.`)
+      setAlerta({ isOpen: true, title: 'Sucesso', message: `${nQtd} garrafas produzidas. Estoques atualizados.`, type: 'success' })
       router.refresh()
       onClose()
       setQtdGarrafas('') 
@@ -147,9 +168,9 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
           acao: 'ERRO_ENGARRAFAMENTO',
           descricao: `Erro ao engarrafar Lote ${lote.id}: ${err.message} - Tentativa: ${nQtd} garrafas ${tamanho}ml`
       })
-      alert("Erro ao engarrafar: " + err.message)
+      setAlerta({ isOpen: true, title: 'Erro', message: `Erro ao engarrafar: ${err.message}`, type: 'error' })
     } finally {
-      setLoading(false)
+        setLoading(false)
     }
   }
 
@@ -228,6 +249,27 @@ export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
           </button>
 
         </form>
+
+        <ModalAlerta
+          isOpen={alerta.isOpen}
+          title={alerta.title}
+          message={alerta.message}
+          type={alerta.type}
+          onClose={() => setAlerta({ ...alerta, isOpen: false })}
+        />
+
+        <ModalConfirmacao
+          isOpen={confirmacao.isOpen}
+          title={confirmacao.title}
+          message={confirmacao.message}
+          isDangerous={confirmacao.isDangerous}
+          onConfirm={() => {
+            setConfirmacao({ ...confirmacao, isOpen: false })
+            onConfirmCallback()
+          }}
+          onCancel={() => setConfirmacao({ ...confirmacao, isOpen: false })}
+          loading={loading}
+        />
       </div>
     </div>
   )
