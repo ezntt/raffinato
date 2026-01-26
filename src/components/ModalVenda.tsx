@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { PRECO_PADRAO, NOME_INSUMO } from '@/lib/constants'
 import { useMasks } from '@/lib/useMasks'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 interface Props {
   isOpen: boolean
@@ -16,7 +17,7 @@ export function ModalVenda({ isOpen, onClose }: Props) {
   const { formatPhoneNumber, formatCPF, formatCNPJ } = useMasks()
   const [loading, setLoading] = useState(false)
   const [buscandoDados, setBuscandoDados] = useState(false)
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
 
   // Dados do Cliente (Visíveis)
   const [nome, setNome] = useState('')

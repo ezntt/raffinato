@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ComprasList } from './ComprasList'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 // Definição das Categorias Visuais
 const CATEGORIAS_VISUAIS = {
@@ -17,7 +18,7 @@ const CATEGORIAS_VISUAIS = {
 export function InsumosList({ insumos, historico }: { insumos: any[], historico: any[] }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'estoque' | 'historico'>('estoque')
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   
   // Estado para controlar o Modo de Edição
   const [isEditing, setIsEditing] = useState(false)

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ModalAlerta } from './ModalAlerta'
 import { ModalConfirmacao } from './ModalConfirmacao'
+import type { AlertType } from '@/types'
 
 interface Props {
   loteId: string
@@ -15,7 +16,7 @@ interface Props {
 export function BotaoFinalizar({ loteId, tipo, qtd750, qtd375 }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   const [confirmacao, setConfirmacao] = useState({ isOpen: false })
 
   const handleFinalizar = async () => {

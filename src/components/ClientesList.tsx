@@ -4,12 +4,13 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useMasks } from '@/lib/useMasks'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 export function ClientesList({ initialClientes }: { initialClientes: any[] }) {
   const router = useRouter()
   const { formatPhoneNumber, formatCPF, formatCNPJ, formatCEP } = useMasks()
   const [clientes, setClientes] = useState(initialClientes)
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   
   // Controle do Modal
   const [isModalOpen, setIsModalOpen] = useState(false)

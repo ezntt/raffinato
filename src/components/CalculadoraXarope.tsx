@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { NOME_INSUMO, RECEITA } from '@/lib/constants'
 import { ModalAlerta } from './ModalAlerta'
 import { ModalConfirmacao } from './ModalConfirmacao'
+import type { AlertType } from '@/types'
 
 export function CalculadoraXarope() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [sucoInput, setSucoInput] = useState('')
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   const [confirmacao, setConfirmacao] = useState({ isOpen: false, stage: 0, isDangerous: false })
   const [onConfirmCallback, setOnConfirmCallback] = useState<() => void>(() => {})
 

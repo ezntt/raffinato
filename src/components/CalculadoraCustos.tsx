@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { NOME_INSUMO } from '@/lib/constants'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 // --- ÍCONES ---
 const CheckIcon = () => (
@@ -168,7 +169,7 @@ const ITENS_PERMITIDOS = [
 export function CalculadoraCustos() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   
   // Controle de Modais
   const [showInfo, setShowInfo] = useState(false)

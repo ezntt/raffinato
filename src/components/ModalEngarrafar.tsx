@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { NOME_INSUMO } from '@/lib/constants'
 import { ModalAlerta } from './ModalAlerta'
 import { ModalConfirmacao } from './ModalConfirmacao'
+import type { AlertType } from '@/types'
 
 interface Props {
   isOpen: boolean
@@ -15,7 +16,7 @@ interface Props {
 export function ModalEngarrafar({ isOpen, onClose, lote }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   const [confirmacao, setConfirmacao] = useState({ isOpen: false, title: '', message: '', isDangerous: false })
   const [onConfirmCallback, setOnConfirmCallback] = useState<() => void>(() => {})
   

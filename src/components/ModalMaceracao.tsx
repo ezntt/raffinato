@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { NOME_INSUMO } from '@/lib/constants'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 interface Props {
   isOpen: boolean
@@ -17,7 +18,7 @@ export function ModalMaceracao({ isOpen, onClose }: Props) {
   const [qtd, setQtd] = useState('')
   
   // Estados para Modal
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   
   // IDs dos Insumos
   const [idAlcoolPuro, setIdAlcoolPuro] = useState<string>('')

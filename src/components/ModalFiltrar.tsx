@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { NOME_INSUMO } from '@/lib/constants'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 interface Props {
   isOpen: boolean
@@ -14,7 +15,7 @@ interface Props {
 export function ModalFiltrar({ isOpen, onClose, tipoInicial }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   
   // Inputs Manuais
   const [qtdBaixa, setQtdBaixa] = useState('') // Quanto tiro do balde com casca

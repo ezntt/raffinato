@@ -3,11 +3,12 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { ModalAlerta } from './ModalAlerta'
+import type { AlertType } from '@/types'
 
 export function VendasList({ initialVendas }: { initialVendas: any[] }) {
   const [vendas, setVendas] = useState(initialVendas)
   const [filtro, setFiltro] = useState<'todos' | 'pagos' | 'pendentes'>('todos')
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   
   // NOVOS ESTADOS DE FILTRO
   const [filtroMes, setFiltroMes] = useState(new Date().toISOString().slice(0, 7)) // Ex: 2024-02

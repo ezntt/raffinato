@@ -54,3 +54,13 @@ export interface ILote {
   data_criacao: string
   data_finalizacao?: string
 }
+
+// Alert and Modal Types
+export type AlertType = 'error' | 'success' | 'warning' | 'info'
+
+export interface AlertState {
+  isOpen: boolean
+  title: string
+  message: string
+  type: AlertType
+}

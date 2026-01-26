@@ -4,11 +4,12 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ModalAlerta } from './ModalAlerta'
 import { ModalConfirmacao } from './ModalConfirmacao'
+import type { AlertType } from '@/types'
 
 export function ComprasList({ compras }: { compras: any[] }) {
   const router = useRouter()
   const [filtroMes, setFiltroMes] = useState(new Date().toISOString().slice(0, 7)) // Ex: "2024-02"
-  const [alerta, setAlerta] = useState({ isOpen: false, title: '', message: '', type: 'error' as const })
+  const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
   const [confirmacao, setConfirmacao] = useState({ isOpen: false, title: '', message: '', compraParaExcluir: null as any })
   
   // Estados do modal de edição
