@@ -23,11 +23,6 @@ export default function ConfiguracoesPage() {
   const [cidade, setCidade] = useState('Florianópolis')
   const [estado, setEstado] = useState('SC')
 
-  // Estado do Form - Custos e Parâmetros
-  const [custoAluguel, setCustoAluguel] = useState('')
-  const [custoRt, setCustoRt] = useState('') // Responsável Técnico
-  const [impostoPadrao, setImpostoPadrao] = useState('')
-
   // Máscara CNPJ
   const maskCNPJ = (v: string) => {
     return v.replace(/\D/g, "")
@@ -57,11 +52,6 @@ export default function ConfiguracoesPage() {
         setBairro(data.bairro || '')
         setCidade(data.cidade || '')
         setEstado(data.estado || '')
-
-        // Custos (Convertendo number para string para o input)
-        setCustoAluguel(data.custo_aluguel ? String(data.custo_aluguel) : '')
-        setCustoRt(data.custo_rt ? String(data.custo_rt) : '')
-        setImpostoPadrao(data.imposto_padrao ? String(data.imposto_padrao) : '')
       }
       setLoading(false)
     }
@@ -85,11 +75,7 @@ export default function ConfiguracoesPage() {
         complemento, 
         bairro, 
         cidade, 
-        estado,
-        // Novos Campos (Garante que vai como null se estiver vazio)
-        custo_aluguel: custoAluguel ? Number(custoAluguel) : null,
-        custo_rt: custoRt ? Number(custoRt) : null,
-        imposto_padrao: impostoPadrao ? Number(impostoPadrao) : null
+        estado
     }
 
     try {
@@ -181,58 +167,6 @@ export default function ConfiguracoesPage() {
                         <input value={cidade} onChange={e => setCidade(e.target.value)} className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black min-w-0" />
                         <input value={estado} onChange={e => setEstado(e.target.value)} maxLength={2} className="w-20 p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black text-center uppercase" />
                     </div>
-                </div>
-            </div>
-        </section>
-
-        {/* NOVA SEÇÃO: CUSTOS E PARÂMETROS */}
-        <section className="bg-white p-6 md:p-8 rounded-3xl border border-orange-200 shadow-sm relative overflow-hidden">
-            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 rounded-r">
-                <div className="flex items-start">
-                    <div className="ml-1">
-                        <h3 className="text-orange-800 font-bold text-sm uppercase tracking-wide">🚧 Em Desenvolvimento</h3>
-                    </div>
-                </div>
-            </div>
-
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                Custos Fixos & Parâmetros
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Aluguel (R$)</label>
-                    <input 
-                        type="number" 
-                        step="0.01"
-                        value={custoAluguel} 
-                        onChange={e => setCustoAluguel(e.target.value)} 
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" 
-                        placeholder="0,00" 
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Responsável Técnico (R$)</label>
-                    <input 
-                        type="number" 
-                        step="0.01"
-                        value={custoRt} 
-                        onChange={e => setCustoRt(e.target.value)} 
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" 
-                        placeholder="0,00" 
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Imposto Padrão (%)</label>
-                    <input 
-                        type="number" 
-                        step="0.1"
-                        value={impostoPadrao} 
-                        onChange={e => setImpostoPadrao(e.target.value)} 
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-black" 
-                        placeholder="Ex: 4.5" 
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1 font-bold">Porcentagem sobre a venda (Simples Nacional)</p>
                 </div>
             </div>
         </section>
