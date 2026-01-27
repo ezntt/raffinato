@@ -35,7 +35,9 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
   })
 
   // === CÁLCULOS DINÂMICOS ===
-  const faturamentoTotal = vendasFiltradas.reduce((acc, venda) => acc + venda.valor_total, 0)
+  const faturamentoTotal = vendasFiltradas
+    .filter(v => v.pago)
+    .reduce((acc, venda) => acc + venda.valor_total, 0)
   
   const totalPendente = vendasFiltradas
     .filter(v => !v.pago)
