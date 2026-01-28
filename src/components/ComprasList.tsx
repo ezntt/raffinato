@@ -370,11 +370,6 @@ export function ComprasList({ compras }: { compras: any[] }) {
                 />
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-xl text-xs text-yellow-800">
-                <p className="font-bold mb-1">⚠️ Atenção:</p>
-                <p>O estoque será ajustado automaticamente. A quantidade antiga será revertida e a nova quantidade será adicionada.</p>
-              </div>
-
               <div className="flex gap-3">
                 <button
                   type="button"

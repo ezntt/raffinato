@@ -3,12 +3,15 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { ModalAlerta } from './ModalAlerta'
+import { ModalConfirmacao } from './ModalConfirmacao'
 import type { AlertType } from '@/types'
 
 export function VendasList({ initialVendas }: { initialVendas: any[] }) {
   const [vendas, setVendas] = useState(initialVendas)
   const [filtro, setFiltro] = useState<'todos' | 'pagos' | 'pendentes'>('todos')
   const [alerta, setAlerta] = useState<{ isOpen: boolean; title: string; message: string; type: AlertType }>({ isOpen: false, title: '', message: '', type: 'error' })
+  const [modalExcluir, setModalExcluir] = useState<{ isOpen: boolean; vendaId: number | null }>({ isOpen: false, vendaId: null })
+  const [carregando, setCarregando] = useState(false)
   
   // NOVOS ESTADOS DE FILTRO
   const [filtroMes, setFiltroMes] = useState(new Date().toISOString().slice(0, 7)) // Ex: 2024-02
@@ -56,6 +59,56 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
     if (error) {
       setAlerta({ isOpen: true, title: 'Erro', message: 'Erro ao atualizar pagamento!', type: 'error' })
       setVendas(vendas)
+    }
+  }
+
+  // Função para excluir venda e reverter estoque
+  const excluirVenda = async (vendaId: number) => {
+    setCarregando(true)
+    try {
+      // 1. Busca os dados da venda antes de excluir para compor o log
+      const vendaParaLog = vendas.find(v => v.id === vendaId)
+
+      // 2. Chama a procedure de reversão de estoque
+      const { data, error } = await supabase.rpc('excluir_venda_com_reversao', { p_venda_id: vendaId })
+
+      if (error) throw error
+      
+      if (data && data[0] && data[0].sucesso) {
+        // 3. Registro de Log manual via código
+        await supabase.from('Logs').insert({
+          categoria: 'VENDA',
+          acao: 'EXCLUSAO',
+          descricao: `Venda #${vendaId} excluída. Valor: R$ ${vendaParaLog?.valor_total.toFixed(2)}. Cliente: ${vendaParaLog?.Cliente?.nome}. Estoque revertido: ${vendaParaLog?.itens_venda.map((item: any) => `${item.quantidade}x ${item.nome}`).join(', ')}.`
+        })
+
+        // Atualiza a interface
+        setVendas(vendas.filter(v => v.id !== vendaId))
+        setAlerta({ 
+          isOpen: true, 
+          title: 'Sucesso', 
+          message: 'Venda excluída e log registrado.', 
+          type: 'success' 
+        })
+        setModalExcluir({ isOpen: false, vendaId: null })
+      } else {
+        setAlerta({ 
+          isOpen: true, 
+          title: 'Erro', 
+          message: data[0]?.mensagem || 'Erro desconhecido', 
+          type: 'error' 
+        })
+      }
+    } catch (error: any) {
+      console.error('Erro ao excluir venda:', error)
+      setAlerta({ 
+        isOpen: true, 
+        title: 'Erro', 
+        message: 'Erro ao excluir: ' + (error.message || 'Erro de conexão'), 
+        type: 'error' 
+      })
+    } finally {
+      setCarregando(false)
     }
   }
 
@@ -157,12 +210,22 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
               <div className="text-left md:text-right">
                 <span className="block text-xl font-black text-gray-900">R$ {venda.valor_total.toFixed(2)}</span>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); togglePagamento(venda.id, venda.pago) }}
-                className={`flex items-center gap-2  px-4 py-2 rounded-xl text-xs font-bold uppercase border transition-all ${venda.pago ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
-              >
-                {venda.pago ? <>✓ Pago</> : <>Marcar Pago</>}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); togglePagamento(venda.id, venda.pago) }}
+                  className={`flex items-center gap-2  px-4 py-2 rounded-xl text-xs font-bold uppercase border transition-all ${venda.pago ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-white border-red-200 text-red-500 hover:bg-red-50'}`}
+                >
+                  {venda.pago ? <>✓ Pago</> : <>Marcar Pago</>}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setModalExcluir({ isOpen: true, vendaId: venda.id }) }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase border bg-white border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all"
+                  title="Excluir venda (reverter estoque)"
+                >
+                  🗑️
+                </button>
+              </div>
+
             </div>
 
           </div>
@@ -175,6 +238,18 @@ export function VendasList({ initialVendas }: { initialVendas: any[] }) {
         message={alerta.message}
         type={alerta.type}
         onClose={() => setAlerta({ ...alerta, isOpen: false })}
+      />
+
+      <ModalConfirmacao
+        isOpen={modalExcluir.isOpen}
+        title="Excluir Venda?"
+        message="Tem certeza que deseja excluir esta venda? Todos os produtos serão devolvidos ao estoque e o histórico será registrado em log."
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={() => modalExcluir.vendaId && excluirVenda(modalExcluir.vendaId)}
+        onCancel={() => setModalExcluir({ isOpen: false, vendaId: null })}
+        isDangerous={true}
+        loading={carregando}
       />
     </div>
   )

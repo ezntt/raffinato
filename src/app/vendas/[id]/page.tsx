@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabaseServer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { DetalhesVendaClient } from '@/components/DetalhesVendaClient'
 
 export const revalidate = 0
 
@@ -36,30 +37,34 @@ export default async function DetalhesVendaPage(props: Props) {
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
         
         {/* CABEÇALHO */}
-        <div className="bg-gray-50 p-8 border-b border-gray-100 flex flex-col md:flex-row justify-between md:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Venda #{venda.id}</span>
-              {venda.pago ? (
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200">PAGO</span>
-              ) : (
-                <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-red-200">PENDENTE</span>
-              )}
+        <div className="bg-gray-50 p-8 border-b border-gray-100">
+          <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Venda #{venda.id}</span>
+                {venda.pago ? (
+                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200">PAGO</span>
+                ) : (
+                  <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-red-200">PENDENTE</span>
+                )}
+              </div>
+              <h1 className="text-3xl font-black text-gray-900 mt-2">R$ {venda.valor_total.toFixed(2)}</h1>
+              <p className="text-gray-400 font-medium text-sm mt-1">
+                {new Date(venda.data_venda).toLocaleDateString('pt-BR')} às {new Date(venda.data_venda).toLocaleTimeString('pt-BR')}
+              </p>
             </div>
-            <h1 className="text-3xl font-black text-gray-900 mt-2">R$ {venda.valor_total.toFixed(2)}</h1>
-            <p className="text-gray-400 font-medium text-sm mt-1">
-              {new Date(venda.data_venda).toLocaleDateString('pt-BR')} às {new Date(venda.data_venda).toLocaleTimeString('pt-BR')}
-            </p>
+
+            <div className="text-left md:text-right bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <span className="text-xs font-bold text-gray-400 uppercase block mb-1">Cliente</span>
+              <h2 className="text-lg font-black text-gray-900">{venda.Cliente?.nome || 'Não informado'}</h2>
+              <p className="text-gray-500 text-sm font-medium">{venda.Cliente?.telefone || '-'}</p>
+              <span className="text-[10px] font-bold uppercase text-gray-400 bg-gray-100 px-2 py-1 rounded mt-2 inline-block">
+                {venda.Cliente?.tipo || 'consumidor'}
+              </span>
+            </div>
           </div>
 
-          <div className="text-left md:text-right bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <span className="text-xs font-bold text-gray-400 uppercase block mb-1">Cliente</span>
-            <h2 className="text-lg font-black text-gray-900">{venda.Cliente?.nome || 'Não informado'}</h2>
-            <p className="text-gray-500 text-sm font-medium">{venda.Cliente?.telefone || '-'}</p>
-            <span className="text-[10px] font-bold uppercase text-gray-400 bg-gray-100 px-2 py-1 rounded mt-2 inline-block">
-              {venda.Cliente?.tipo || 'consumidor'}
-            </span>
-          </div>
+          <DetalhesVendaClient venda={venda} />
         </div>
 
         {/* ITENS */}
